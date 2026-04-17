@@ -58,17 +58,17 @@ Application configuration is externalized through environment variables and opti
 - Default printer mappings are externalized by operational role.
 - Environment-specific values can be changed without code changes.
 
-Configuration examples are available in [config](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config), and the handover guide is in [docs/configuration.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/configuration.md).
+Configuration examples are available in [config](config), and the handover guide is in [docs/configuration.md](docs/configuration.md).
 
-Document storage behavior is documented in [docs/document_storage.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/document_storage.md).
+Document storage behavior is documented in [docs/document_storage.md](docs/document_storage.md).
 
-Logging and audit behavior is documented in [docs/logging_and_audit.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/logging_and_audit.md).
+Logging and audit behavior is documented in [docs/logging_and_audit.md](docs/logging_and_audit.md).
 
-Printing behavior is documented in [docs/printing.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/printing.md).
+Printing behavior is documented in [docs/printing.md](docs/printing.md).
 
-Desktop workstation printing is documented in [docs/desktop_printing.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/desktop_printing.md).
+Desktop workstation printing is documented in [docs/desktop_printing.md](docs/desktop_printing.md).
 
-The reusable desktop design system lives under [src/logistics_app/desktop/ui](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/desktop/ui) and can be previewed through [app.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/desktop/app.py).
+The reusable desktop design system lives under [src/logistics_app/desktop/ui](src/logistics_app/desktop/ui) and can be previewed through [app.py](src/logistics_app/desktop/app.py).
 
 ## Initial Status
 

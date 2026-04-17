@@ -9,8 +9,8 @@ Printing is split into two clear responsibilities:
 
 Implementation:
 
-- [print_instruction_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/application/services/print_instruction_service.py)
-- [print_job_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/application/services/print_job_service.py)
+- [print_instruction_service.py](../src/logistics_app/application/services/print_instruction_service.py)
+- [print_job_service.py](../src/logistics_app/application/services/print_job_service.py)
 
 ## Print Instructions
 

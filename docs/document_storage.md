@@ -6,11 +6,11 @@ The document storage service stores files on disk and stores only metadata in Po
 
 Implementation entry point:
 
-- [document_storage_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/storage/document_storage_service.py)
+- [document_storage_service.py](../src/logistics_app/infrastructure/storage/document_storage_service.py)
 
 Metadata model:
 
-- [document.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/data/models/document.py)
+- [document.py](../src/logistics_app/data/models/document.py)
 
 ## Business Rules Covered
 

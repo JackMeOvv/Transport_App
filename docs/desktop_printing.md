@@ -2,7 +2,7 @@
 
 ## Overview
 
-The desktop client now has a workstation-oriented print execution layer under [infrastructure/printing](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing).
+The desktop client now has a workstation-oriented print execution layer under [infrastructure/printing](../src/logistics_app/infrastructure/printing).
 
 This layer keeps two responsibilities separate:
 
@@ -11,15 +11,15 @@ This layer keeps two responsibilities separate:
 
 ## Main Components
 
-- [desktop_print_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing/desktop_print_service.py)
+- [desktop_print_service.py](../src/logistics_app/infrastructure/printing/desktop_print_service.py)
   Coordinates local print execution with `print_jobs` tracking.
-- [windows_print_backend.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing/windows_print_backend.py)
+- [windows_print_backend.py](../src/logistics_app/infrastructure/printing/windows_print_backend.py)
   Windows-specific backend for local workstation printing.
-- [workstation_print_backend.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing/workstation_print_backend.py)
+- [workstation_print_backend.py](../src/logistics_app/infrastructure/printing/workstation_print_backend.py)
   Backend contract that keeps the desktop print service decoupled from one implementation.
-- [printing_models.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing/printing_models.py)
+- [printing_models.py](../src/logistics_app/infrastructure/printing/printing_models.py)
   Shared request and result models.
-- [printing_exceptions.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/printing/printing_exceptions.py)
+- [printing_exceptions.py](../src/logistics_app/infrastructure/printing/printing_exceptions.py)
   Explicit printing errors for readable failure handling.
 
 ## How It Works

@@ -13,8 +13,8 @@ This separation keeps operational accountability distinct from technical diagnos
 
 Implementation:
 
-- [audit_trail_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/application/services/audit_trail_service.py)
-- [audit_log.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/data/models/audit_log.py)
+- [audit_trail_service.py](../src/logistics_app/application/services/audit_trail_service.py)
+- [audit_log.py](../src/logistics_app/data/models/audit_log.py)
 
 The audit service is explicit by design:
 
@@ -51,10 +51,10 @@ Audit records include:
 
 Implementation:
 
-- [application_logging_service.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/application/services/application_logging_service.py)
-- [setup.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/logging/setup.py)
-- [logger_factory.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/logging/logger_factory.py)
-- [application_log.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/data/models/application_log.py)
+- [application_logging_service.py](../src/logistics_app/application/services/application_logging_service.py)
+- [setup.py](../src/logistics_app/infrastructure/logging/setup.py)
+- [logger_factory.py](../src/logistics_app/infrastructure/logging/logger_factory.py)
+- [application_log.py](../src/logistics_app/data/models/application_log.py)
 
 Application logging supports:
 

@@ -4,13 +4,13 @@
 
 The application uses environment-based configuration. This keeps secrets out of source code and allows the same codebase to move between development, test, staging, and production environments.
 
-Configuration is loaded by [settings.py](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/src/logistics_app/infrastructure/config/settings.py) through the `LOGISTICS_APP_` environment variable prefix.
+Configuration is loaded by [settings.py](../src/logistics_app/infrastructure/config/settings.py) through the `LOGISTICS_APP_` environment variable prefix.
 
-The project also includes example configuration files in [config](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config):
+The project also includes example configuration files in [config](../config):
 
-- [.env.example](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config/.env.example)
-- [.env.development.example](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config/.env.development.example)
-- [.env.production.example](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config/.env.production.example)
+- [.env.example](../config/.env.example)
+- [.env.development.example](../config/.env.development.example)
+- [.env.production.example](../config/.env.production.example)
 
 ## How Configuration Is Structured
 
@@ -41,7 +41,7 @@ Examples:
 
 ### Option 1: Local `.env` file
 
-1. Copy [config/.env.example](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config/.env.example) to `.env` in the repository root.
+1. Copy [config/.env.example](../config/.env.example) to `.env` in the repository root.
 2. Replace placeholder values with environment-appropriate values.
 3. Start the service or desktop process from the repository root.
 
