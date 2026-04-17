@@ -1,0 +1,1 @@
+"""Internal logistics application package."""
