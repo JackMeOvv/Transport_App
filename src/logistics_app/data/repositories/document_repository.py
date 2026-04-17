@@ -20,6 +20,10 @@ class DocumentRepository:
         self._session.add(document)
         return document
 
+    def get_by_id(self, document_id: int) -> Document | None:
+        """Load one document metadata record by primary key."""
+        return self._session.get(Document, document_id)
+
     def get_latest_version(
         self,
         delivery_slip_id: int,
@@ -45,6 +49,27 @@ class DocumentRepository:
 
         statement = statement.order_by(Document.version_number.desc()).limit(1)
         return self._session.scalar(statement)
+
+    def list_for_delivery(
+        self,
+        delivery_slip_id: int,
+        pallet_id: int | None = None,
+        split_transport_id: int | None = None,
+        latest_only: bool = True,
+    ) -> list[Document]:
+        """Return documents for a delivery scope."""
+        statement = select(Document).where(Document.delivery_slip_id == delivery_slip_id)
+        if pallet_id is not None:
+            statement = statement.where(Document.pallet_id == pallet_id)
+
+        if split_transport_id is not None:
+            statement = statement.where(Document.split_transport_id == split_transport_id)
+
+        if latest_only:
+            statement = statement.where(Document.is_latest_version.is_(True))
+
+        statement = statement.order_by(Document.document_type, Document.version_number.desc())
+        return list(self._session.scalars(statement))
 
     def mark_existing_versions_not_latest(
         self,

@@ -209,6 +209,17 @@ class PrintJobService:
         )
         return print_job
 
+    def list_jobs(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[PrintJob]:
+        """Return print jobs for one delivery scope."""
+        return self._print_job_repository.list_by_delivery_slip(
+            delivery_slip_id=delivery_slip_id,
+            split_transport_id=split_transport_id,
+        )
+
     def _resolve_requested_copy_count(
         self,
         requested_copy_count: int | None,

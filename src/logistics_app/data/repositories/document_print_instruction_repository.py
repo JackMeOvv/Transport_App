@@ -39,3 +39,21 @@ class DocumentPrintInstructionRepository:
                 DocumentPrintInstruction.split_transport_id == split_transport_id
             )
         return self._session.scalar(statement.limit(1))
+
+    def list_by_delivery_slip(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[DocumentPrintInstruction]:
+        """Return print instructions for one delivery scope."""
+        statement = select(DocumentPrintInstruction).where(
+            DocumentPrintInstruction.delivery_slip_id == delivery_slip_id
+        )
+        if split_transport_id is None:
+            statement = statement.where(DocumentPrintInstruction.split_transport_id.is_(None))
+        else:
+            statement = statement.where(
+                DocumentPrintInstruction.split_transport_id == split_transport_id
+            )
+        statement = statement.order_by(DocumentPrintInstruction.document_type)
+        return list(self._session.scalars(statement))

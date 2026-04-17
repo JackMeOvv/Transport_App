@@ -60,6 +60,8 @@ Application configuration is externalized through environment variables and opti
 
 Configuration examples are available in [config](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/config), and the handover guide is in [docs/configuration.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/configuration.md).
 
+The main internal IT handover document is [docs/internal_it_handover.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/internal_it_handover.md).
+
 Document storage behavior is documented in [docs/document_storage.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/document_storage.md).
 
 Logging and audit behavior is documented in [docs/logging_and_audit.md](/C:/Users/bornv/OneDrive/Documenten/Transportdocuments/docs/logging_and_audit.md).

@@ -237,6 +237,23 @@ class AuditTrailService:
             },
         )
 
+    def record_custom_event(
+        self,
+        entity_type: AuditEntityType,
+        entity_id: int | None,
+        action_type: AuditActionType,
+        context: AuditContext,
+        details: dict[str, Any],
+    ) -> AuditLog:
+        """Write an explicit custom audit event from an application command."""
+        return self._record(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            action_type=action_type,
+            context=context,
+            details=details,
+        )
+
     def _record(
         self,
         entity_type: AuditEntityType,

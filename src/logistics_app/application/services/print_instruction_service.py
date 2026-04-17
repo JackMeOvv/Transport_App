@@ -121,3 +121,14 @@ class PrintInstructionService:
             printer_role=instruction.printer_role if instruction is not None else None,
             is_mandatory=instruction.is_mandatory if instruction is not None else False,
         )
+
+    def list_instructions(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[DocumentPrintInstruction]:
+        """Return configured print instructions for one delivery scope."""
+        return self._instruction_repository.list_by_delivery_slip(
+            delivery_slip_id=delivery_slip_id,
+            split_transport_id=split_transport_id,
+        )

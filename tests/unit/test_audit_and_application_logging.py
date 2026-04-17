@@ -81,6 +81,27 @@ def test_audit_trail_service_records_pallet_movement() -> None:
     assert audit_log.details_json["to_location_code"] == "STAGE-02"
 
 
+def test_audit_trail_service_records_transport_document_readiness_confirmation() -> None:
+    """Transport readiness confirmations should list the ready document types clearly."""
+    session = FakeSession()
+    service = AuditTrailService(session=session)
+
+    audit_log = service.record_transport_document_readiness_confirmed(
+        delivery_slip_id=99,
+        ready_document_types=[DocumentType.PACKING_SLIP, DocumentType.CMR],
+        context=AuditContext(
+            performed_by="transport.user",
+            source_system="service_api",
+            delivery_slip_id=99,
+        ),
+    )
+
+    assert audit_log.action_type == AuditActionType.STATUS_CHANGE
+    assert audit_log.entity_type == AuditEntityType.DELIVERY_SLIP
+    assert audit_log.details_json["event_name"] == "transport_document_readiness_confirmed"
+    assert audit_log.details_json["ready_document_types"] == ["PACKING_SLIP", "CMR"]
+
+
 def test_application_logging_service_persists_validation_error() -> None:
     """Validation errors should emit a warning-level persisted application log."""
     session = FakeSession()

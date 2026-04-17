@@ -75,6 +75,18 @@ class FakeDocumentPrintInstructionRepository:
     ) -> DocumentPrintInstruction | None:
         return self.instructions.get((delivery_slip_id, document_type, split_transport_id))
 
+    def list_by_delivery_slip(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[DocumentPrintInstruction]:
+        return [
+            instruction
+            for (instruction_delivery_slip_id, _document_type, instruction_split_transport_id), instruction in self.instructions.items()
+            if instruction_delivery_slip_id == delivery_slip_id
+            and instruction_split_transport_id == split_transport_id
+        ]
+
 
 class FakePrintJobRepository:
     """Print job repository double for copy tracking tests."""
@@ -109,6 +121,18 @@ class FakePrintJobRepository:
             ):
                 total += print_job.printed_copy_count or 0
         return total
+
+    def list_by_delivery_slip(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[PrintJob]:
+        return [
+            print_job
+            for print_job in self.jobs.values()
+            if print_job.delivery_slip_id == delivery_slip_id
+            and print_job.split_transport_id == split_transport_id
+        ]
 
 
 def build_print_job_service() -> tuple[PrintInstructionService, PrintJobService, FakePrintJobRepository]:
@@ -226,3 +250,90 @@ def test_request_reprint_creates_new_job_with_override_printer() -> None:
     assert reprint_job.reprint_of_print_job_id == 5
     assert reprint_job.printer_name == "Label_Backup_01"
     assert reprint_job.is_manual_printer_override is True
+
+
+def test_mark_job_printed_updates_printed_and_remaining_copy_counts() -> None:
+    """A successfully printed job should reduce remaining required copies."""
+    instruction_service, print_job_service, _ = build_print_job_service()
+
+    instruction_service.upsert_instruction(
+        delivery_slip_id=40,
+        document_type=DocumentType.CMR,
+        required_copy_count=2,
+        changed_by="transport.user",
+        source_system="service_api",
+    )
+
+    print_job, _summary = print_job_service.request_print(
+        PrintRequest(
+            delivery_slip_id=40,
+            document_type=DocumentType.CMR,
+            requested_by="warehouse.user",
+            source_system="desktop_client",
+        )
+    )
+    print_job_service.mark_job_printed(print_job.id, printed_copy_count=2)
+
+    summary_after_print = instruction_service.get_requirement_summary(
+        delivery_slip_id=40,
+        document_type=DocumentType.CMR,
+    )
+
+    assert summary_after_print.printed_copy_count == 2
+    assert summary_after_print.remaining_copy_count == 0
+
+
+def test_print_summary_is_scoped_to_split_transport_when_exception_flow_is_used() -> None:
+    """Rare split transport instructions should not affect the normal delivery scope."""
+    instruction_service, _, print_job_repository = build_print_job_service()
+
+    instruction_service.upsert_instruction(
+        delivery_slip_id=50,
+        document_type=DocumentType.PACKING_SLIP,
+        required_copy_count=5,
+        changed_by="transport.user",
+        source_system="service_api",
+        split_transport_id=7,
+    )
+    print_job_repository.add(
+        PrintJob(
+            delivery_slip_id=50,
+            document_type=DocumentType.PACKING_SLIP,
+            split_transport_id=7,
+            target_type=PrintTargetType.SPLIT_TRANSPORT,
+            printer_name="Warehouse_Main_01",
+            requested_copy_count=2,
+            printed_copy_count=2,
+            status=PrintJobStatus.PRINTED,
+            queued_at=datetime.now(UTC),
+        )
+    )
+    print_job_repository.add(
+        PrintJob(
+            delivery_slip_id=50,
+            document_type=DocumentType.PACKING_SLIP,
+            split_transport_id=None,
+            target_type=PrintTargetType.DELIVERY,
+            printer_name="Warehouse_Main_01",
+            requested_copy_count=3,
+            printed_copy_count=3,
+            status=PrintJobStatus.PRINTED,
+            queued_at=datetime.now(UTC),
+        )
+    )
+
+    split_summary = instruction_service.get_requirement_summary(
+        delivery_slip_id=50,
+        document_type=DocumentType.PACKING_SLIP,
+        split_transport_id=7,
+    )
+    normal_summary = instruction_service.get_requirement_summary(
+        delivery_slip_id=50,
+        document_type=DocumentType.PACKING_SLIP,
+    )
+
+    assert split_summary.required_copy_count == 5
+    assert split_summary.printed_copy_count == 2
+    assert split_summary.remaining_copy_count == 3
+    assert normal_summary.required_copy_count == 0
+    assert normal_summary.printed_copy_count == 3

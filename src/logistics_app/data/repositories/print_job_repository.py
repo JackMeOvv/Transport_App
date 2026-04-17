@@ -46,3 +46,17 @@ class PrintJobRepository:
         for print_job in self._session.scalars(statement):
             total_printed += print_job.printed_copy_count or 0
         return total_printed
+
+    def list_by_delivery_slip(
+        self,
+        delivery_slip_id: int,
+        split_transport_id: int | None = None,
+    ) -> list[PrintJob]:
+        """Return print jobs for one delivery scope."""
+        statement = select(PrintJob).where(PrintJob.delivery_slip_id == delivery_slip_id)
+        if split_transport_id is None:
+            statement = statement.where(PrintJob.split_transport_id.is_(None))
+        else:
+            statement = statement.where(PrintJob.split_transport_id == split_transport_id)
+        statement = statement.order_by(PrintJob.queued_at.desc(), PrintJob.id.desc())
+        return list(self._session.scalars(statement))
