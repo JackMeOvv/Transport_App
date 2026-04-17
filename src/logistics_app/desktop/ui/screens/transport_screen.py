@@ -168,10 +168,10 @@ class TransportScreenWindow(QMainWindow):
         cards_layout.setVerticalSpacing(14)
         cards_layout.addWidget(
             SummaryCard(
-                "Document Completeness",
-                "5 / 6",
-                "All core transport documents uploaded except signed CMR",
-                "Pending",
+                "Shipments Pending Action",
+                "4",
+                "Open shipments requiring document completion or readiness confirmation",
+                "Action",
                 "warning",
             ),
             0,
@@ -179,22 +179,22 @@ class TransportScreenWindow(QMainWindow):
         )
         cards_layout.addWidget(
             SummaryCard(
-                "Print Copies Remaining",
-                "4",
-                "Warehouse still needs outbound print execution on 2 document types",
-                "Operational",
-                "info",
+                "Document Completeness",
+                "5 / 6",
+                "All core transport documents uploaded except signed CMR",
+                "Pending",
+                "warning",
             ),
             0,
             1,
         )
         cards_layout.addWidget(
             SummaryCard(
-                "Pallets Linked",
-                "12",
-                "All pallets currently associated with the main delivery slip",
-                "Aligned",
-                "success",
+                "Print Requirements",
+                "4",
+                "Outbound print copy counts defined for 4 document types",
+                "Operational",
+                "info",
             ),
             0,
             2,

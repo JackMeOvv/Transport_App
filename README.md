@@ -17,7 +17,7 @@ The solution is intentionally organized for long-term maintainability:
 The structure follows a layered approach so an internal IT team can quickly understand where responsibilities belong:
 
 - `desktop`
-  Contains the Windows client application, including screens, dialogs, reusable widgets, and theme assets.
+  Contains the Windows client application, including screens, dialogs, reusable widgets, and theme assets. The application supports a role-based workflow where the warehouse initiates Delivery Note generation and pallet movement, while transport focuses on document completeness and readiness confirmation.
 - `service_api`
   Contains the FastAPI service layer that exposes application functionality over the internal network.
 - `application`

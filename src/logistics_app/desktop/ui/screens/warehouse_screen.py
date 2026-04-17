@@ -106,6 +106,10 @@ class WarehouseScreenWindow(QMainWindow):
         refresh_button.clicked.connect(self._refresh_all)
         page_header.add_action_widget(refresh_button)
 
+        create_button = QPushButton("Create Delivery Note")
+        create_button.clicked.connect(self._create_delivery)
+        page_header.add_action_widget(create_button)
+
         open_queue_button = QPushButton("Open Load Queue")
         open_queue_button.clicked.connect(self._refresh_all)
         page_header.add_action_widget(open_queue_button)
@@ -150,7 +154,8 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _build_action_toolbar(self) -> ActionToolbar:
         toolbar = ActionToolbar("Warehouse Actions")
-        toolbar.add_button("Assign Location", role="primary").clicked.connect(self._refresh_all)
+        toolbar.add_button("Create Delivery Note", role="primary").clicked.connect(self._create_delivery)
+        toolbar.add_button("Assign Location").clicked.connect(self._refresh_all)
         toolbar.add_button("Move Pallet").clicked.connect(self._refresh_all)
         toolbar.add_button("Mark Loaded").clicked.connect(self._refresh_all)
         toolbar.add_button("Print Remaining").clicked.connect(self._refresh_all)
@@ -461,6 +466,10 @@ class WarehouseScreenWindow(QMainWindow):
     def _refresh_all(self) -> None:
         """Demo placeholder for operational actions."""
         # In a real app, this would refresh data from the API.
+        pass
+
+    def _create_delivery(self) -> None:
+        """Demo placeholder for generating a new delivery note in the warehouse."""
         pass
 
     def _document_cards(self) -> list[WarehouseDocumentCardData]:
