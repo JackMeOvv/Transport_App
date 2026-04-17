@@ -125,7 +125,7 @@ def test_store_document_preserves_original_name_and_creates_versioned_metadata()
         delivery_slip = DeliverySlip(
             id=10,
             delivery_slip_number="DEL-2026-0001",
-            status=DeliverySlipStatus.REGISTERED,
+            status=DeliverySlipStatus.CREATED,
         )
         session = FakeSession({(DeliverySlip, 10): delivery_slip})
         repository = FakeDocumentRepository()
@@ -166,7 +166,7 @@ def test_storing_new_version_marks_previous_version_not_latest() -> None:
         delivery_slip = DeliverySlip(
             id=20,
             delivery_slip_number="DEL-2026-0002",
-            status=DeliverySlipStatus.REGISTERED,
+            status=DeliverySlipStatus.CREATED,
         )
         existing_document = Document(
             delivery_slip_id=20,
@@ -211,7 +211,7 @@ def test_signed_cmr_is_stored_separately_from_original_cmr() -> None:
         delivery_slip = DeliverySlip(
             id=30,
             delivery_slip_number="DEL-2026-0003",
-            status=DeliverySlipStatus.REGISTERED,
+            status=DeliverySlipStatus.CREATED,
         )
 
         session = FakeSession({(DeliverySlip, 30): delivery_slip})
@@ -252,7 +252,7 @@ def test_store_document_rejects_pallet_from_another_delivery() -> None:
         delivery_slip = DeliverySlip(
             id=40,
             delivery_slip_number="DEL-2026-0004",
-            status=DeliverySlipStatus.REGISTERED,
+            status=DeliverySlipStatus.CREATED,
         )
         pallet = Pallet(
             id=900,

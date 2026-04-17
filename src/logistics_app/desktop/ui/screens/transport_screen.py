@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QTabWidget,
     QTableWidgetItem,
     QTextEdit,
     QVBoxLayout,
@@ -64,6 +65,85 @@ class TransportScreenWindow(QMainWindow):
         self.setWindowTitle("Transport Workspace")
         self.resize(1480, 980)
 
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self._build_active_shipments_page(), "Active / To Ship")
+        self.tabs.addTab(self._build_sent_shipments_page(), "Sent / Shipped")
+        self.tabs.addTab(self._build_details_page(), "Shipment Details")
+
+        self.setCentralWidget(self.tabs)
+
+    def _build_active_shipments_page(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(18)
+
+        header = PageHeader(
+            title="Active Shipments",
+            subtitle="Shipments requiring document preparation, release, or loading follow-up.",
+        )
+        layout.addWidget(header)
+
+        # Reusing parts for demo
+        layout.addWidget(self._build_delivery_search_panel())
+
+        table = DataTable()
+        table.setColumnCount(6)
+        table.setHorizontalHeaderLabels(["Delivery Slip", "Customer", "Destination", "Status", "Docs", "Action"])
+        rows = [
+            ("DEL-2026-0142", "Nordic Export BV", "Rotterdam", "Documents Pending", "5/6", "Open"),
+            ("DEL-2026-0145", "Harbor Export Group", "Lille", "Created", "0/4", "Open"),
+        ]
+        table.setRowCount(len(rows))
+        for r, row_data in enumerate(rows):
+            for c, val in enumerate(row_data):
+                table.setItem(r, c, QTableWidgetItem(val))
+                if c == 5:
+                    btn = QPushButton("Open")
+                    btn.clicked.connect(lambda: self.tabs.setCurrentIndex(2))
+                    table.setCellWidget(r, c, btn)
+        layout.addWidget(table)
+        return page
+
+    def _build_sent_shipments_page(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(18)
+
+        header = PageHeader(
+            title="Sent Shipments",
+            subtitle="History of shipped deliveries. Search and follow up on signed CMRs.",
+        )
+        layout.addWidget(header)
+
+        search_layout = QHBoxLayout()
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Search shipped delivery note...")
+        search_layout.addWidget(search_input)
+        search_btn = QPushButton("Search")
+        search_layout.addWidget(search_btn)
+        layout.addLayout(search_layout)
+
+        table = DataTable()
+        table.setColumnCount(6)
+        table.setHorizontalHeaderLabels(["Delivery Slip", "Customer", "Shipped Date", "Status", "Signed CMR", "Action"])
+        rows = [
+            ("DEL-2026-0140", "Global Trade Co", "2026-04-12", "Shipped", "Uploaded", "Open"),
+            ("DEL-2026-0141", "Euro Parts Ltd", "2026-04-13", "Signed CMR Pending", "Missing", "Open"),
+        ]
+        table.setRowCount(len(rows))
+        for r, row_data in enumerate(rows):
+            for c, val in enumerate(row_data):
+                table.setItem(r, c, QTableWidgetItem(val))
+                if c == 5:
+                    btn = QPushButton("Open")
+                    btn.clicked.connect(lambda: self.tabs.setCurrentIndex(2))
+                    table.setCellWidget(r, c, btn)
+        layout.addWidget(table)
+        return page
+
+    def _build_details_page(self) -> QWidget:
         page_root = QWidget()
         page_root.setObjectName("PageRoot")
 
@@ -72,16 +152,18 @@ class TransportScreenWindow(QMainWindow):
         content_layout.setSpacing(18)
 
         page_header = PageHeader(
-            title="Transport",
+            title="Shipment Details",
             subtitle=(
                 "Source-of-truth workspace for delivery documents, print requirements, "
-                "and readiness confirmation before warehouse loading."
+                "and readiness confirmation."
             ),
         )
         self._build_header_actions(page_header)
+        back_btn = QPushButton("Back to List")
+        back_btn.clicked.connect(lambda: self.tabs.setCurrentIndex(0))
+        page_header.add_action_widget(back_btn)
         content_layout.addWidget(page_header)
 
-        content_layout.addWidget(self._build_delivery_search_panel())
         content_layout.addWidget(self._build_action_toolbar())
         content_layout.addLayout(self._build_summary_cards())
 
@@ -101,7 +183,7 @@ class TransportScreenWindow(QMainWindow):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(page_root)
-        self.setCentralWidget(scroll_area)
+        return scroll_area
 
     def _build_header_actions(self, page_header: PageHeader) -> None:
         refresh_button = QPushButton("Refresh")

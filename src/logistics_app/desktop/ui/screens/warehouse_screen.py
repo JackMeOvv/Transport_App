@@ -352,10 +352,17 @@ class WarehouseScreenWindow(QMainWindow):
         assign_button.setProperty("buttonRole", "primary")
         move_button = QPushButton("Move Pallet")
         load_button = QPushButton("Mark Pallet As Loaded")
-        for button in [assign_button, move_button, load_button]:
+        finalize_button = QPushButton("Finalize Shipment (Ship)")
+        finalize_button.setProperty("buttonRole", "primary")
+
+        for button in [assign_button, move_button, load_button, finalize_button]:
             button.setMinimumHeight(40)
-            button.clicked.connect(self._refresh_all)
+            if button == finalize_button:
+                button.clicked.connect(self._on_finalize_shipment)
+            else:
+                button.clicked.connect(self._refresh_all)
             action_buttons.addWidget(button)
+
         action_buttons.addStretch(1)
         layout.addLayout(action_buttons)
         return panel
@@ -471,6 +478,32 @@ class WarehouseScreenWindow(QMainWindow):
     def _create_delivery(self) -> None:
         """Demo placeholder for generating a new delivery note in the warehouse."""
         pass
+
+    def _on_finalize_shipment(self) -> None:
+        """Demo placeholder for loading completeness check and shipment finalization."""
+        # Simulated completeness check
+        total = 12
+        loaded = 12 # Change to 11 to simulate error
+
+        if loaded < total:
+            from logistics_app.desktop.ui.dialogs import BaseDialog
+            dialog = BaseDialog(
+                title="Loading Incomplete",
+                message=f"Cannot finalize shipment. {total - loaded} pallets are still not loaded.",
+                parent=self
+            )
+            dialog.add_action_button("OK", role="primary").clicked.connect(dialog.accept)
+            dialog.exec()
+        else:
+            from logistics_app.desktop.ui.dialogs import BaseDialog
+            dialog = BaseDialog(
+                title="Shipment Finalized",
+                message="All pallets loaded. Status changed to SHIPPED. Delivery note will move to Sent history.",
+                parent=self
+            )
+            dialog.add_action_button("OK", role="primary").clicked.connect(dialog.accept)
+            dialog.exec()
+            self._refresh_all()
 
     def _document_cards(self) -> list[WarehouseDocumentCardData]:
         return [
