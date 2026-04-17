@@ -105,9 +105,11 @@ class TransportScreenWindow(QMainWindow):
 
     def _build_header_actions(self, page_header: PageHeader) -> None:
         refresh_button = QPushButton("Refresh")
+        refresh_button.clicked.connect(self._refresh_delivery)
         page_header.add_action_widget(refresh_button)
 
         open_queue_button = QPushButton("Open Queue")
+        open_queue_button.clicked.connect(self._refresh_delivery)
         page_header.add_action_widget(open_queue_button)
 
     def _build_delivery_search_panel(self) -> QFrame:
@@ -122,18 +124,19 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(title_label, 0, 0, 1, 6)
 
         layout.addWidget(self._caption("Delivery Slip"), 1, 0)
-        slip_input = QLineEdit()
-        slip_input.setPlaceholderText("Enter or scan delivery slip number")
-        slip_input.setText("DEL-2026-0142")
-        layout.addWidget(slip_input, 1, 1, 1, 2)
+        self.slip_input = QLineEdit()
+        self.slip_input.setPlaceholderText("Enter or scan delivery slip number")
+        self.slip_input.setText("DEL-2026-0142")
+        layout.addWidget(self.slip_input, 1, 1, 1, 2)
 
         layout.addWidget(self._caption("Customer"), 1, 3)
-        customer_filter = QComboBox()
-        customer_filter.addItems(["All customers", "Nordic Export BV", "Westport Logistics"])
-        layout.addWidget(customer_filter, 1, 4)
+        self.customer_filter = QComboBox()
+        self.customer_filter.addItems(["All customers", "Nordic Export BV", "Westport Logistics"])
+        layout.addWidget(self.customer_filter, 1, 4)
 
         open_button = QPushButton("Open Delivery")
         open_button.setProperty("buttonRole", "primary")
+        open_button.clicked.connect(self._refresh_delivery)
         layout.addWidget(open_button, 1, 5)
 
         recent_label = QLabel("Recent")
@@ -145,6 +148,7 @@ class TransportScreenWindow(QMainWindow):
         for text in ["DEL-2026-0142", "DEL-2026-0143", "DEL-2026-0144"]:
             chip = QPushButton(text)
             chip.setProperty("buttonRole", "toolbar")
+            chip.clicked.connect(lambda _checked=False, t=text: self._open_recent(t))
             recent_row.addWidget(chip)
         recent_row.addStretch(1)
         layout.addLayout(recent_row, 2, 1, 1, 5)
@@ -152,10 +156,10 @@ class TransportScreenWindow(QMainWindow):
 
     def _build_action_toolbar(self) -> ActionToolbar:
         toolbar = ActionToolbar("Transport Actions")
-        toolbar.add_button("Upload Documents", role="primary")
-        toolbar.add_button("Adjust Print Copies")
-        toolbar.add_button("Confirm Readiness")
-        toolbar.add_button("Open Delivery History")
+        toolbar.add_button("Upload Documents", role="primary").clicked.connect(self._refresh_delivery)
+        toolbar.add_button("Adjust Print Copies").clicked.connect(self._refresh_delivery)
+        toolbar.add_button("Confirm Readiness").clicked.connect(self._refresh_delivery)
+        toolbar.add_button("Open Delivery History").clicked.connect(self._refresh_delivery)
         return toolbar
 
     def _build_summary_cards(self) -> QGridLayout:
@@ -284,6 +288,7 @@ class TransportScreenWindow(QMainWindow):
 
         confirm_button = QPushButton("Confirm Document Readiness")
         confirm_button.setProperty("buttonRole", "primary")
+        confirm_button.clicked.connect(self._refresh_delivery)
         layout.addWidget(confirm_button, 0, Qt.AlignmentFlag.AlignRight)
         return panel
 
@@ -298,8 +303,10 @@ class TransportScreenWindow(QMainWindow):
         title_label.setObjectName("SectionTitle")
         title_row.addWidget(title_label)
         title_row.addStretch(1)
+
         upload_button = QPushButton("Upload Document")
         upload_button.setProperty("buttonRole", "primary")
+        upload_button.clicked.connect(self._refresh_delivery)
         title_row.addWidget(upload_button)
         layout.addLayout(title_row)
 
@@ -340,8 +347,10 @@ class TransportScreenWindow(QMainWindow):
         title_label.setObjectName("SectionTitle")
         top_row.addWidget(title_label)
         top_row.addStretch(1)
+
         edit_button = QPushButton("Edit Requirements")
         edit_button.setProperty("buttonRole", "primary")
+        edit_button.clicked.connect(self._refresh_delivery)
         top_row.addWidget(edit_button)
         layout.addLayout(top_row)
 
@@ -440,10 +449,26 @@ class TransportScreenWindow(QMainWindow):
 
         actions_row = QHBoxLayout()
         actions_row.addStretch(1)
-        actions_row.addWidget(QPushButton("Add Split Group"))
-        actions_row.addWidget(QPushButton("Review Split Assignment"))
+
+        add_split_button = QPushButton("Add Split Group")
+        add_split_button.clicked.connect(self._refresh_delivery)
+        actions_row.addWidget(add_split_button)
+
+        review_split_button = QPushButton("Review Split Assignment")
+        review_split_button.clicked.connect(self._refresh_delivery)
+        actions_row.addWidget(review_split_button)
+
         layout.addLayout(actions_row)
         return group_box
+
+    def _refresh_delivery(self) -> None:
+        """Demo placeholder for delivery state refresh."""
+        pass
+
+    def _open_recent(self, slip_number: str) -> None:
+        """Demo placeholder for opening a recent delivery."""
+        self.slip_input.setText(slip_number)
+        self._refresh_delivery()
 
     def _document_cards(self) -> list[DocumentCardData]:
         return [

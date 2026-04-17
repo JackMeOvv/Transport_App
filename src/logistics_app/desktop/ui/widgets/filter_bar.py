@@ -35,7 +35,10 @@ class FilterBar(QFrame):
 
         self.apply_button = QPushButton("Apply")
         self.apply_button.setProperty("buttonRole", "primary")
+        self.apply_button.clicked.connect(self._on_apply_clicked)
+
         self.clear_button = QPushButton("Clear")
+        self.clear_button.clicked.connect(self.search_input.clear)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 14)
@@ -51,6 +54,10 @@ class FilterBar(QFrame):
         layout.addStretch(1)
         layout.addWidget(self.clear_button)
         layout.addWidget(self.apply_button)
+
+    def _on_apply_clicked(self) -> None:
+        """Demo placeholder for filter application."""
+        pass
 
     def _caption(self, text: str) -> QLabel:
         label = QLabel(text)

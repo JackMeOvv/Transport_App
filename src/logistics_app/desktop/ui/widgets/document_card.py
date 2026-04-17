@@ -34,8 +34,10 @@ class DocumentCard(QFrame):
         metadata_label.setWordWrap(True)
 
         self.open_button = QPushButton("Open")
+        self.open_button.clicked.connect(self._on_action_clicked)
         self.print_button = QPushButton("Print")
         self.print_button.setProperty("buttonRole", "primary")
+        self.print_button.clicked.connect(self._on_action_clicked)
 
         action_layout = QHBoxLayout()
         action_layout.setContentsMargins(0, 0, 0, 0)
@@ -58,3 +60,7 @@ class DocumentCard(QFrame):
         content_layout.addWidget(metadata_label)
         content_layout.addSpacing(4)
         content_layout.addLayout(action_layout)
+
+    def _on_action_clicked(self) -> None:
+        """Demo placeholder for document actions."""
+        pass

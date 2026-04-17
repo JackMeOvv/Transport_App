@@ -102,8 +102,13 @@ class WarehouseScreenWindow(QMainWindow):
         self.setCentralWidget(scroll_area)
 
     def _build_header_actions(self, page_header: PageHeader) -> None:
-        page_header.add_action_widget(QPushButton("Refresh"))
-        page_header.add_action_widget(QPushButton("Open Load Queue"))
+        refresh_button = QPushButton("Refresh")
+        refresh_button.clicked.connect(self._refresh_all)
+        page_header.add_action_widget(refresh_button)
+
+        open_queue_button = QPushButton("Open Load Queue")
+        open_queue_button.clicked.connect(self._refresh_all)
+        page_header.add_action_widget(open_queue_button)
 
     def _build_scan_panel(self) -> QFrame:
         panel = self._create_panel("ContentSurface")
@@ -124,30 +129,32 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addWidget(helper_label, 1, 0, 1, 6)
 
         layout.addWidget(self._caption("Scan Input"), 2, 0)
-        scan_input = QLineEdit()
-        scan_input.setPlaceholderText("Scan pallet ID or enter main delivery slip number")
-        scan_input.setText("PAL-0142-003")
-        scan_input.setMinimumHeight(52)
-        scan_input.setStyleSheet("font-size: 16pt; font-weight: 600;")
-        layout.addWidget(scan_input, 2, 1, 1, 3)
+        self.scan_input = QLineEdit()
+        self.scan_input.setPlaceholderText("Scan pallet ID or enter main delivery slip number")
+        self.scan_input.setText("PAL-0142-003")
+        self.scan_input.setMinimumHeight(52)
+        self.scan_input.setStyleSheet("font-size: 16pt; font-weight: 600;")
+        layout.addWidget(self.scan_input, 2, 1, 1, 3)
 
         open_button = QPushButton("Open")
         open_button.setProperty("buttonRole", "primary")
         open_button.setMinimumHeight(52)
+        open_button.clicked.connect(self._refresh_all)
         layout.addWidget(open_button, 2, 4)
 
         clear_button = QPushButton("Clear")
         clear_button.setMinimumHeight(52)
+        clear_button.clicked.connect(self.scan_input.clear)
         layout.addWidget(clear_button, 2, 5)
         return panel
 
     def _build_action_toolbar(self) -> ActionToolbar:
         toolbar = ActionToolbar("Warehouse Actions")
-        toolbar.add_button("Assign Location", role="primary")
-        toolbar.add_button("Move Pallet")
-        toolbar.add_button("Mark Loaded")
-        toolbar.add_button("Print Remaining")
-        toolbar.add_button("Upload Signed CMR")
+        toolbar.add_button("Assign Location", role="primary").clicked.connect(self._refresh_all)
+        toolbar.add_button("Move Pallet").clicked.connect(self._refresh_all)
+        toolbar.add_button("Mark Loaded").clicked.connect(self._refresh_all)
+        toolbar.add_button("Print Remaining").clicked.connect(self._refresh_all)
+        toolbar.add_button("Upload Signed CMR").clicked.connect(self._refresh_all)
         return toolbar
 
     def _build_summary_cards(self) -> QGridLayout:
@@ -261,8 +268,13 @@ class WarehouseScreenWindow(QMainWindow):
         actions_row = QHBoxLayout()
         upload_button = QPushButton("Upload Signed CMR")
         upload_button.setProperty("buttonRole", "primary")
+        upload_button.clicked.connect(self._refresh_all)
         actions_row.addWidget(upload_button)
-        actions_row.addWidget(QPushButton("Open Existing Signed CMR"))
+
+        open_signed_button = QPushButton("Open Existing Signed CMR")
+        open_signed_button.clicked.connect(self._refresh_all)
+        actions_row.addWidget(open_signed_button)
+
         actions_row.addStretch(1)
         layout.addLayout(actions_row)
         return panel
@@ -337,6 +349,7 @@ class WarehouseScreenWindow(QMainWindow):
         load_button = QPushButton("Mark Pallet As Loaded")
         for button in [assign_button, move_button, load_button]:
             button.setMinimumHeight(40)
+            button.clicked.connect(self._refresh_all)
             action_buttons.addWidget(button)
         action_buttons.addStretch(1)
         layout.addLayout(action_buttons)
@@ -353,7 +366,10 @@ class WarehouseScreenWindow(QMainWindow):
         title_label.setObjectName("SectionTitle")
         title_row.addWidget(title_label)
         title_row.addStretch(1)
-        title_row.addWidget(QPushButton("Open All Documents"))
+
+        open_all_button = QPushButton("Open All Documents")
+        open_all_button.clicked.connect(self._refresh_all)
+        title_row.addWidget(open_all_button)
         layout.addLayout(title_row)
 
         helper_label = QLabel(
@@ -394,6 +410,7 @@ class WarehouseScreenWindow(QMainWindow):
         top_row.addStretch(1)
         print_all_button = QPushButton("Print Remaining")
         print_all_button.setProperty("buttonRole", "primary")
+        print_all_button.clicked.connect(self._refresh_all)
         top_row.addWidget(print_all_button)
         layout.addLayout(top_row)
 
@@ -425,12 +442,26 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addWidget(table)
 
         action_row = QHBoxLayout()
-        action_row.addWidget(QPushButton("Print Selected"))
-        action_row.addWidget(QPushButton("Manual Printer Override"))
-        action_row.addWidget(QPushButton("Reprint Last Job"))
+        print_selected_button = QPushButton("Print Selected")
+        print_selected_button.clicked.connect(self._refresh_all)
+        action_row.addWidget(print_selected_button)
+
+        manual_override_button = QPushButton("Manual Printer Override")
+        manual_override_button.clicked.connect(self._refresh_all)
+        action_row.addWidget(manual_override_button)
+
+        reprint_button = QPushButton("Reprint Last Job")
+        reprint_button.clicked.connect(self._refresh_all)
+        action_row.addWidget(reprint_button)
+
         action_row.addStretch(1)
         layout.addLayout(action_row)
         return panel
+
+    def _refresh_all(self) -> None:
+        """Demo placeholder for operational actions."""
+        # In a real app, this would refresh data from the API.
+        pass
 
     def _document_cards(self) -> list[WarehouseDocumentCardData]:
         return [
