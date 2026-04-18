@@ -593,6 +593,9 @@ class TransportScreenWindow(QMainWindow):
 
     def _refresh_details_page(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            return
+
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
         detail_values = {
             "Delivery Slip": delivery.delivery_slip_number,

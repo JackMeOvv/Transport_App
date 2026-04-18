@@ -417,6 +417,10 @@ class WarehouseScreenWindow(QMainWindow):
         return panel
     def _refresh_all(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_empty_state()
+            return
+
         documents_ready_for_warehouse = delivery.status in {
             DeliverySlipStatus.RELEASED_BY_TRANSPORT,
             DeliverySlipStatus.READY_TO_LOAD,
@@ -443,6 +447,28 @@ class WarehouseScreenWindow(QMainWindow):
         if documents_ready_for_warehouse:
             self._refresh_document_cards(delivery)
             self._refresh_print_execution_table(delivery)
+
+    def _show_empty_state(self) -> None:
+        """Clear the screen when no delivery is selected."""
+        self._displayed_delivery_slip_number = None
+        self.page_header.set_subtitle("No shipment selected. Scan a pallet or enter a delivery slip number.")
+        self.scan_input.clear()
+        self.selected_pallet_input.clear()
+        self.location_input.clear()
+        self.upload_notes.clear()
+
+        self.summary_card_one.update_content("Current Delivery", "-", "No delivery selected", "-", "neutral")
+        self.summary_card_two.update_content("Pallets Loaded", "-", "No delivery selected", "-", "neutral")
+        self.summary_card_three.update_content("Print Copies Remaining", "-", "No delivery selected", "-", "neutral")
+
+        self.transport_readiness_badge.setText("None")
+        self.transport_readiness_badge.set_tone("neutral")
+        for label in self.transport_detail_labels.values():
+            label.setText("-")
+
+        self.pallets_table.setRowCount(0)
+        self.documents_panel.setVisible(False)
+        self.print_execution_panel.setVisible(False)
 
     def _refresh_summary_cards(self, delivery) -> None:
         self.summary_card_one.update_content(

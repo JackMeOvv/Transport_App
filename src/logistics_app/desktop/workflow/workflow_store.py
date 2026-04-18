@@ -215,18 +215,20 @@ class DesktopWorkflowStore(QObject):
     """Small shared desktop workflow store for the current process."""
 
     workflow_changed = Signal()
-    current_delivery_changed = Signal(str)
+    current_delivery_changed = Signal(object)
     navigation_requested = Signal(str, str)
 
     def __init__(self) -> None:
         super().__init__()
         self._sequence = count(147)
-        self._current_delivery_slip_number = "DEL-2026-0142"
+        self._current_delivery_slip_number: str | None = "DEL-2026-0142"
         self._audit_events: list[AuditEventRecord] = []
         self._transport_operator_name = ""
         self._deliveries = self._build_initial_deliveries()
 
-    def current_delivery(self) -> DeliveryWorkflowRecord:
+    def current_delivery(self) -> DeliveryWorkflowRecord | None:
+        if self._current_delivery_slip_number is None:
+            return None
         return self.get_delivery(self._current_delivery_slip_number)
 
     def get_delivery(self, delivery_slip_number: str) -> DeliveryWorkflowRecord:
@@ -284,8 +286,8 @@ class DesktopWorkflowStore(QObject):
             if delivery.status in sent_statuses
         ]
 
-    def set_current_delivery(self, delivery_slip_number: str) -> None:
-        if delivery_slip_number not in self._deliveries:
+    def set_current_delivery(self, delivery_slip_number: str | None) -> None:
+        if delivery_slip_number is not None and delivery_slip_number not in self._deliveries:
             raise ValueError(f"Unknown delivery slip: {delivery_slip_number}")
         self._current_delivery_slip_number = delivery_slip_number
         self.current_delivery_changed.emit(delivery_slip_number)
@@ -294,7 +296,10 @@ class DesktopWorkflowStore(QObject):
     def find_delivery_by_reference(self, reference_text: str) -> DeliveryWorkflowRecord:
         reference = reference_text.strip().upper()
         if not reference:
-            return self.current_delivery()
+            current = self.current_delivery()
+            if current is None:
+                raise ValueError("No delivery is currently selected. Please enter a reference.")
+            return current
         if reference in self._deliveries:
             return self._deliveries[reference]
 
