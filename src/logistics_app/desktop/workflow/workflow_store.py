@@ -970,10 +970,6 @@ class DesktopWorkflowStore(QObject):
         uploaded_by: str,
     ) -> None:
         """Generate pallet sticker labels with Code 128 barcodes for each pallet."""
-        requirement = delivery.print_requirements[DocumentType.STICKER]
-        requirement.required_copies = len(delivery.pallets)
-        requirement.printed_copies = len(delivery.pallets)
-
         sticker_history = delivery.document_history.setdefault(DocumentType.STICKER, [])
         version = len(sticker_history) + 1
         filename = f"PalletStickers_{delivery.delivery_slip_number}.zpl"

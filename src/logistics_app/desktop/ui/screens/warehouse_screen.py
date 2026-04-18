@@ -415,7 +415,13 @@ class WarehouseScreenWindow(QMainWindow):
         return panel
     def _refresh_all(self) -> None:
         delivery = self._workflow_store.current_delivery()
-        documents_ready_for_warehouse = delivery.is_ready_for_release
+        documents_ready_for_warehouse = delivery.status in {
+            DeliverySlipStatus.RELEASED_BY_TRANSPORT,
+            DeliverySlipStatus.READY_TO_LOAD,
+            DeliverySlipStatus.LOADING_IN_PROGRESS,
+            DeliverySlipStatus.SHIPPED,
+            DeliverySlipStatus.COMPLETED,
+        }
         delivery_changed = delivery.delivery_slip_number != self._displayed_delivery_slip_number
         self._displayed_delivery_slip_number = delivery.delivery_slip_number
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
