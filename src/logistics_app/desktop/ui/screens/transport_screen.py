@@ -143,7 +143,6 @@ class TransportScreenWindow(QMainWindow):
 
         search_layout = QHBoxLayout()
         self.sent_search_input = QLineEdit()
-        self.sent_search_input.setPlaceholderText("Search shipped delivery note or customer...")
         self.sent_search_input.textChanged.connect(self._refresh_sent_shipments_table)
         search_layout.addWidget(self.sent_search_input)
         clear_button = QPushButton("Clear")
@@ -221,7 +220,6 @@ class TransportScreenWindow(QMainWindow):
 
         layout.addWidget(self._caption("Your Name"), 1, 0)
         self.operator_name_input = QLineEdit()
-        self.operator_name_input.setPlaceholderText("Enter colleague name")
         self.operator_name_input.setText(self._workflow_store.transport_operator_name())
         layout.addWidget(self.operator_name_input, 1, 1)
 
@@ -247,8 +245,8 @@ class TransportScreenWindow(QMainWindow):
 
         layout.addWidget(self._caption("Delivery Slip"), 1, 0)
         self.slip_input = QLineEdit()
-        self.slip_input.setPlaceholderText("Enter or scan delivery slip number")
-        self.slip_input.setText(self._workflow_store.current_delivery().delivery_slip_number)
+        delivery = self._workflow_store.current_delivery()
+        self.slip_input.setText(delivery.delivery_slip_number if delivery else "")
         layout.addWidget(self.slip_input, 1, 1, 1, 2)
 
         layout.addWidget(self._caption("Customer"), 1, 3)
@@ -587,6 +585,14 @@ class TransportScreenWindow(QMainWindow):
 
     def _refresh_details_page(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self.page_header.set_subtitle("Select a shipment from the queue to manage documents and release.")
+            for label in self._delivery_detail_labels.values():
+                label.setText("-")
+            self.notes_box.clear()
+            self.slip_input.clear()
+            return
+
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
         detail_values = {
             "Delivery Slip": delivery.delivery_slip_number,
@@ -867,6 +873,12 @@ class TransportScreenWindow(QMainWindow):
 
     def _confirm_document_readiness(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
+        if not delivery.expected_loading_date:
+            self._show_warning("Cannot release shipment: Expected loading date must be set first.")
+            return
         self._workflow_store.release_delivery(delivery.delivery_slip_number, "transport.office")
         self._show_information(f"{delivery.delivery_slip_number} released to warehouse.")
 

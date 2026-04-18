@@ -220,12 +220,14 @@ class DesktopWorkflowStore(QObject):
     def __init__(self) -> None:
         super().__init__()
         self._sequence = count(147)
-        self._current_delivery_slip_number = "DEL-2026-0142"
+        self._current_delivery_slip_number = None
         self._audit_events: list[AuditEventRecord] = []
         self._transport_operator_name = ""
         self._deliveries = self._build_initial_deliveries()
 
-    def current_delivery(self) -> DeliveryWorkflowRecord:
+    def current_delivery(self) -> DeliveryWorkflowRecord | None:
+        if self._current_delivery_slip_number is None:
+            return None
         return self.get_delivery(self._current_delivery_slip_number)
 
     def get_delivery(self, delivery_slip_number: str) -> DeliveryWorkflowRecord:
@@ -290,7 +292,7 @@ class DesktopWorkflowStore(QObject):
         self.current_delivery_changed.emit(delivery_slip_number)
         self.workflow_changed.emit()
 
-    def find_delivery_by_reference(self, reference_text: str) -> DeliveryWorkflowRecord:
+    def find_delivery_by_reference(self, reference_text: str) -> DeliveryWorkflowRecord | None:
         reference = reference_text.strip().upper()
         if not reference:
             return self.current_delivery()

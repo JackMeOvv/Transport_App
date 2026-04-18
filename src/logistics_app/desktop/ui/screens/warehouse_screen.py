@@ -106,8 +106,14 @@ class WarehouseScreenWindow(QMainWindow):
 
         content_layout.addWidget(self._build_scan_panel())
         content_layout.addWidget(self._build_action_toolbar())
+
+        self.operational_container = QWidget()
+        operational_layout = QVBoxLayout(self.operational_container)
+        operational_layout.setContentsMargins(0, 0, 0, 0)
+        operational_layout.setSpacing(18)
+
         self.summary_cards_layout = self._build_summary_cards()
-        content_layout.addLayout(self.summary_cards_layout)
+        operational_layout.addLayout(self.summary_cards_layout)
 
         main_grid = QGridLayout()
         main_grid.setHorizontalSpacing(18)
@@ -120,7 +126,8 @@ class WarehouseScreenWindow(QMainWindow):
         main_grid.addWidget(self._build_print_execution_panel(), 2, 1)
         main_grid.setColumnStretch(0, 3)
         main_grid.setColumnStretch(1, 2)
-        content_layout.addLayout(main_grid)
+        operational_layout.addLayout(main_grid)
+        content_layout.addWidget(self.operational_container)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -160,7 +167,6 @@ class WarehouseScreenWindow(QMainWindow):
 
         layout.addWidget(self._caption("Scan Input"), 2, 0)
         self.scan_input = QLineEdit()
-        self.scan_input.setPlaceholderText("Scan pallet ID or enter main delivery slip number")
         self.scan_input.setMinimumHeight(52)
         self.scan_input.setStyleSheet("font-size: 16pt; font-weight: 600;")
         layout.addWidget(self.scan_input, 2, 1, 1, 3)
@@ -313,7 +319,6 @@ class WarehouseScreenWindow(QMainWindow):
         form_grid.setVerticalSpacing(10)
         self.selected_pallet_input = QLineEdit()
         self.location_input = QLineEdit()
-        self.location_input.setPlaceholderText("A-01-03 or Dock 2")
         self.move_reason = QComboBox()
         self.move_reason.addItems(["Stage for loading", "Relocate", "Correct location", "Load to truck"])
         form_grid.addWidget(self._caption("Selected Pallet"), 0, 0)
@@ -414,6 +419,13 @@ class WarehouseScreenWindow(QMainWindow):
         return panel
     def _refresh_all(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self.page_header.set_subtitle("Scan or select a delivery to begin warehouse operations.")
+            self.scan_input.clear()
+            self.operational_container.setVisible(False)
+            return
+
+        self.operational_container.setVisible(True)
         documents_ready_for_warehouse = delivery.is_ready_for_release
         delivery_changed = delivery.delivery_slip_number != self._displayed_delivery_slip_number
         self._displayed_delivery_slip_number = delivery.delivery_slip_number
@@ -613,6 +625,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _adjust_pallet_count(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         new_count_text, accepted = QInputDialog.getText(
             self,
             "Adjust Pallet Count",
@@ -648,6 +663,9 @@ class WarehouseScreenWindow(QMainWindow):
             self.location_input.setText(delivery.pallets[0].current_location)
 
     def _assign_location(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         pallet_id = self.selected_pallet_input.text().strip()
         location = self.location_input.text().strip()
         if not pallet_id or not location:
@@ -661,6 +679,9 @@ class WarehouseScreenWindow(QMainWindow):
         self._show_information(f"{pallet_id} assigned to {location}.")
 
     def _move_pallet(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         pallet_id = self.selected_pallet_input.text().strip()
         location = self.location_input.text().strip()
         if not pallet_id or not location:
@@ -674,6 +695,9 @@ class WarehouseScreenWindow(QMainWindow):
         self._show_information(f"{pallet_id} moved to {location}.")
 
     def _mark_selected_pallet_loaded(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         pallet_id = self.selected_pallet_input.text().strip()
         if not pallet_id:
             self._show_warning("Select a pallet first.")
@@ -687,6 +711,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _finalize_shipment(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         summary = self._workflow_store.loading_summary(delivery.delivery_slip_number)
         if not summary["is_complete"]:
             missing = ", ".join(summary["missing_pallets"]) or "unknown"
@@ -697,6 +724,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _upload_signed_cmr(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         if delivery.status not in {DeliverySlipStatus.SHIPPED, DeliverySlipStatus.COMPLETED}:
             self._show_warning("Signed CMR should be uploaded after loading and shipment completion.")
             return
@@ -720,6 +750,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _open_existing_signed_cmr(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         record = delivery.documents.get(DocumentType.SIGNED_CMR)
         if record is None:
             self._show_warning("No signed CMR uploaded yet.")
@@ -731,6 +764,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _open_all_documents(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         if not delivery.documents:
             self._show_warning("No documents available yet.")
             return
@@ -739,6 +775,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _open_document(self, title: str) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         document_type = DocumentType[title.replace(" ", "_").upper()]
         record = delivery.documents.get(document_type)
         if record is None:
@@ -750,6 +789,9 @@ class WarehouseScreenWindow(QMainWindow):
         self._show_information(f"Open document: {record.filename}")
 
     def _print_document(self, title: str) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         document_type = DocumentType[title.replace(" ", "_").upper()]
         if (
             document_type == DocumentType.SIGNED_CMR
@@ -761,6 +803,9 @@ class WarehouseScreenWindow(QMainWindow):
 
     def _print_remaining_documents(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
         printed_any = False
         for document_type, requirement in delivery.print_requirements.items():
             if requirement.remaining_copies > 0:
@@ -773,6 +818,9 @@ class WarehouseScreenWindow(QMainWindow):
             self._show_information("No remaining copies needed printing.")
 
     def _print_selected_document(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         current_row = self.print_execution_table.currentRow()
         if current_row < 0:
             self._show_warning("Select a document type in the print table first.")
@@ -781,6 +829,9 @@ class WarehouseScreenWindow(QMainWindow):
         self._apply_print_action(DocumentType[title.replace(" ", "_").upper()], reprint=False)
 
     def _manual_printer_override(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         current_row = self.print_execution_table.currentRow()
         if current_row < 0:
             self._show_warning("Select a document type in the print table first.")
@@ -800,6 +851,9 @@ class WarehouseScreenWindow(QMainWindow):
         self._show_information(f"Printer override set for {title}.")
 
     def _reprint_last_job(self) -> None:
+        if self._workflow_store.current_delivery() is None:
+            self._show_warning("No delivery selected.")
+            return
         if self._last_printed_document_type is None:
             self._show_warning("No previous print job is available for reprint.")
             return
