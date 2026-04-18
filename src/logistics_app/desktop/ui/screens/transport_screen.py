@@ -109,6 +109,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(new_orders_label)
 
         self.active_shipments_table = DataTable()
+        self.active_shipments_table.setObjectName("TransportActiveTable")
         self.active_shipments_table.setColumnCount(8)
         self.active_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Destination", "Status", "Docs", "Readiness", "Claimed By", "Action"]
@@ -121,6 +122,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(released_orders_label)
 
         self.released_shipments_table = DataTable()
+        self.released_shipments_table.setObjectName("TransportReleasedTable")
         self.released_shipments_table.setColumnCount(8)
         self.released_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Destination", "Status", "Docs", "Readiness", "Claimed By", "Action"]
@@ -152,6 +154,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addLayout(search_layout)
 
         self.sent_shipments_table = DataTable()
+        self.sent_shipments_table.setObjectName("TransportSentTable")
         self.sent_shipments_table.setColumnCount(8)
         self.sent_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Shipped", "Status", "Signed CMR", "Documents", "Claimed By", "Action"]
@@ -440,6 +443,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addLayout(top_row)
 
         self.print_requirements_table = DataTable()
+        self.print_requirements_table.setObjectName("TransportPrintRequirementsTable")
         self.print_requirements_table.setColumnCount(6)
         self.print_requirements_table.setHorizontalHeaderLabels(["Document Type", "Required", "Printed", "Remaining", "Default Printer", "Readiness"])
         self.print_requirements_table.itemDoubleClicked.connect(lambda _item: self._adjust_print_copies())
@@ -467,6 +471,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(helper_text)
 
         self.pallets_table = DataTable()
+        self.pallets_table.setObjectName("TransportLinkedPalletsTable")
         self.pallets_table.setColumnCount(5)
         self.pallets_table.setHorizontalHeaderLabels(["Pallet ID", "Status", "Location", "Packages", "Last Movement"])
         layout.addWidget(self.pallets_table)

@@ -293,6 +293,7 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addLayout(top_row)
 
         self.pallets_table = DataTable()
+        self.pallets_table.setObjectName("WarehousePalletsTable")
         self.pallets_table.setColumnCount(6)
         self.pallets_table.setHorizontalHeaderLabels(["Pallet ID", "Status", "Current Location", "Pallet No.", "Ready To Load", "Last Movement"])
         self.pallets_table.itemSelectionChanged.connect(self._populate_pallet_action_fields_from_selection)
@@ -396,6 +397,7 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addWidget(helper_label)
 
         self.print_execution_table = DataTable()
+        self.print_execution_table.setObjectName("WarehousePrintExecutionTable")
         self.print_execution_table.setColumnCount(6)
         self.print_execution_table.setHorizontalHeaderLabels(["Document Type", "Required", "Printed", "Remaining", "Printer", "Action State"])
         layout.addWidget(self.print_execution_table)

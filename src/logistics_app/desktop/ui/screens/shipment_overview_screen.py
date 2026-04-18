@@ -284,6 +284,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         layout.addWidget(released_label)
 
         self.released_table = DataTable()
+        self.released_table.setObjectName("OverviewReleasedTable")
         self.released_table.setColumnCount(11)
         self.released_table.setHorizontalHeaderLabels(
             [
@@ -308,6 +309,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         layout.addWidget(not_ready_label)
 
         self.not_ready_table = DataTable()
+        self.not_ready_table.setObjectName("OverviewNotReadyTable")
         self.not_ready_table.setColumnCount(11)
         self.not_ready_table.setHorizontalHeaderLabels(
             [
