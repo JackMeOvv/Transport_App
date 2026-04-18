@@ -13,6 +13,7 @@ class DocumentCard(QFrame):
 
     open_requested = Signal(str)
     print_requested = Signal(str)
+    upload_requested = Signal(str)
 
     def __init__(
         self,
@@ -23,6 +24,7 @@ class DocumentCard(QFrame):
         status_tone: str = "neutral",
         can_open: bool = True,
         can_print: bool = True,
+        can_upload: bool = True,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -49,12 +51,16 @@ class DocumentCard(QFrame):
         self.print_button.setProperty("buttonRole", "primary")
         self.print_button.clicked.connect(lambda: self.print_requested.emit(self.title))
         self.print_button.setEnabled(can_print)
+        self.upload_button = QPushButton("Upload")
+        self.upload_button.clicked.connect(lambda: self.upload_requested.emit(self.title))
+        self.upload_button.setEnabled(can_upload)
 
         action_layout = QHBoxLayout()
         action_layout.setContentsMargins(0, 0, 0, 0)
         action_layout.setSpacing(8)
         action_layout.addWidget(self.open_button)
         action_layout.addWidget(self.print_button)
+        action_layout.addWidget(self.upload_button)
         action_layout.addStretch(1)
 
         top_layout = QHBoxLayout()
@@ -85,7 +91,8 @@ class DocumentCard(QFrame):
         self.status_badge.setText(status_text)
         self.status_badge.set_tone(status_tone)
 
-    def set_action_availability(self, can_open: bool, can_print: bool) -> None:
+    def set_action_availability(self, can_open: bool, can_print: bool, can_upload: bool = True) -> None:
         """Enable or disable quick actions based on document availability."""
         self.open_button.setEnabled(can_open)
         self.print_button.setEnabled(can_print)
+        self.upload_button.setEnabled(can_upload)
