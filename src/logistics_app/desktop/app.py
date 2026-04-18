@@ -10,8 +10,13 @@ if __package__ in {None, ""}:
 
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
     QMainWindow,
     QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 from logistics_app.desktop.ui.screens import (

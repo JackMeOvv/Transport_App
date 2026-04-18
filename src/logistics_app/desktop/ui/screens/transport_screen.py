@@ -986,7 +986,8 @@ class TransportScreenWindow(QMainWindow):
 
     def _update_transport_notes(self) -> None:
         delivery = self._workflow_store.current_delivery()
-        delivery.transport_notes = self.notes_box.toPlainText().strip()
+        if delivery:
+            delivery.transport_notes = self.notes_box.toPlainText().strip()
 
     def _show_information(self, message: str) -> None:
         QMessageBox.information(self, "Transport", message)
