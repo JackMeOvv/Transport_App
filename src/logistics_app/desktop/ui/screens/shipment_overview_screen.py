@@ -222,9 +222,33 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         toolbar = ActionToolbar("Overview Actions")
         toolbar.add_button("Open Selected Delivery", role="primary").clicked.connect(self._open_selected_delivery)
         toolbar.add_button("Quick Delivery View").clicked.connect(self._open_selected_delivery)
+        self.delete_delivery_button = toolbar.add_button("Delete Delivery")
+        self.delete_delivery_button.clicked.connect(self._delete_selected_delivery)
         toolbar.add_button("Clear Filters").clicked.connect(self._clear_filters)
         toolbar.add_button("Refresh Queue").clicked.connect(self._refresh_table)
         return toolbar
+
+    def set_current_role(self, role: str) -> None:
+        """Apply role-based permissions to the overview actions."""
+        if hasattr(self, "delete_delivery_button"):
+            self.delete_delivery_button.setEnabled(role == "Admin")
+
+    def _delete_selected_delivery(self) -> None:
+        if self.released_table.currentRow() >= 0 and self.released_table.rowCount() > 0:
+            delivery_number = self._released_rows[self.released_table.currentRow()].delivery_slip_number
+        elif self.not_ready_table.currentRow() >= 0 and self.not_ready_table.rowCount() > 0:
+            delivery_number = self._not_ready_rows[self.not_ready_table.currentRow()].delivery_slip_number
+        else:
+            return
+
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Deletion",
+            f"Are you sure you want to permanently delete delivery {delivery_number}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            self._workflow_store.delete_delivery(delivery_number, "admin.user")
 
     def _build_summary_cards(self) -> QGridLayout:
         cards_layout = QGridLayout()

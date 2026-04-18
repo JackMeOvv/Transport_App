@@ -183,7 +183,10 @@ class DeliveryWorkflowRecord:
 
     @property
     def is_ready_for_release(self) -> bool:
-        return self.required_document_types.issubset(self.available_document_types)
+        return (
+            len(self.required_document_types) > 0
+            and self.required_document_types.issubset(self.available_document_types)
+        )
 
     @property
     def signed_cmr_status_text(self) -> str:
@@ -539,6 +542,33 @@ class DesktopWorkflowStore(QObject):
         )
         self.workflow_changed.emit()
 
+    def admin_release_delivery(self, delivery_slip_number: str, released_by: str) -> None:
+        """Force release a shipment bypassing normal document readiness rules."""
+        delivery = self.get_delivery(delivery_slip_number)
+        delivery.status = DeliverySlipStatus.RELEASED_BY_TRANSPORT
+        self._log_event(
+            event_name="admin_manual_override_release",
+            delivery_slip_number=delivery_slip_number,
+            performed_by=released_by,
+            details="Admin manual override: shipment released bypassing standard document rules.",
+        )
+        self.workflow_changed.emit()
+
+    def delete_delivery(self, delivery_slip_number: str, performed_by: str) -> None:
+        """Delete a delivery record from the store."""
+        if delivery_slip_number not in self._deliveries:
+            return
+        del self._deliveries[delivery_slip_number]
+        if self._current_delivery_slip_number == delivery_slip_number:
+            self._current_delivery_slip_number = None
+        self._log_event(
+            event_name="delivery_deleted",
+            delivery_slip_number=delivery_slip_number,
+            performed_by=performed_by,
+            details=f"Delivery {delivery_slip_number} was manually deleted by admin.",
+        )
+        self.workflow_changed.emit()
+
     def set_printer_override(
         self,
         delivery_slip_number: str,
@@ -760,31 +790,31 @@ class DesktopWorkflowStore(QObject):
         return {
             DocumentType.PACKING_SLIP: PrintRequirementRecord(
                 document_type=DocumentType.PACKING_SLIP,
-                required_copies=2,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
             DocumentType.CMR: PrintRequirementRecord(
                 document_type=DocumentType.CMR,
-                required_copies=2,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
             DocumentType.CERTIFICATE: PrintRequirementRecord(
                 document_type=DocumentType.CERTIFICATE,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Office_01",
             ),
             DocumentType.STICKER: PrintRequirementRecord(
                 document_type=DocumentType.STICKER,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Label_01",
             ),
             DocumentType.TRANSPORT_DOCUMENT: PrintRequirementRecord(
                 document_type=DocumentType.TRANSPORT_DOCUMENT,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
