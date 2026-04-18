@@ -37,6 +37,7 @@ class ShipmentOverviewRow:
     status_text: str
     status_tone: str
     pallet_count: int
+    carrier_name: str
     loading_progress_percent: int
     warehouse_situation: str
     warehouse_tone: str
@@ -65,6 +66,7 @@ class DeliverySlipQuickViewDialog(BaseDialog):
         summary_rows = [
             ("Customer", delivery.customer_name),
             ("Destination", delivery.destination_name),
+            ("Carrier", delivery.carrier_name or "Not set"),
             ("Status", delivery.status.value.replace("_", " ").title()),
             ("Pallets", str(delivery.total_pallets)),
             ("Loaded", str(delivery.loaded_pallets)),
@@ -282,12 +284,13 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         layout.addWidget(released_label)
 
         self.released_table = DataTable()
-        self.released_table.setColumnCount(10)
+        self.released_table.setColumnCount(11)
         self.released_table.setHorizontalHeaderLabels(
             [
                 "Delivery Slip",
                 "Customer",
                 "Destination",
+                "Carrier",
                 "Status",
                 "Pallets",
                 "Loading",
@@ -305,12 +308,13 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         layout.addWidget(not_ready_label)
 
         self.not_ready_table = DataTable()
-        self.not_ready_table.setColumnCount(10)
+        self.not_ready_table.setColumnCount(11)
         self.not_ready_table.setHorizontalHeaderLabels(
             [
                 "Delivery Slip",
                 "Customer",
                 "Destination",
+                "Carrier",
                 "Status",
                 "Pallets",
                 "Loading",
@@ -388,6 +392,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
                 row.delivery_slip_number,
                 row.customer_name,
                 row.destination_name,
+                row.carrier_name,
                 row.status_text + (" | Split" if row.is_split_exception else ""),
                 str(row.pallet_count),
                 f"{row.loading_progress_percent}%",
@@ -398,17 +403,17 @@ class ShipmentOverviewScreenWindow(QMainWindow):
             for column_index, value in enumerate(text_values):
                 table.setItem(row_index, column_index, QTableWidgetItem(value))
 
-            table.setCellWidget(row_index, 3, StatusBadge(row.status_text, row.status_tone))
-            table.setCellWidget(row_index, 5, self._build_progress_widget(row.loading_progress_percent))
-            table.setCellWidget(row_index, 6, StatusBadge(row.warehouse_situation, row.warehouse_tone))
+            table.setCellWidget(row_index, 4, StatusBadge(row.status_text, row.status_tone))
+            table.setCellWidget(row_index, 6, self._build_progress_widget(row.loading_progress_percent))
+            table.setCellWidget(row_index, 7, StatusBadge(row.warehouse_situation, row.warehouse_tone))
             table.setCellWidget(
                 row_index,
-                7,
+                8,
                 StatusBadge(row.document_readiness_text, row.document_readiness_tone),
             )
             table.setCellWidget(
                 row_index,
-                8,
+                9,
                 StatusBadge(row.signed_cmr_status_text, row.signed_cmr_status_tone),
             )
 
@@ -417,7 +422,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
             open_button.clicked.connect(
                 lambda _checked=False, delivery_number=row.delivery_slip_number: self._open_delivery_by_number(delivery_number)
             )
-            table.setCellWidget(row_index, 9, open_button)
+            table.setCellWidget(row_index, 10, open_button)
 
         table.resizeRowsToContents()
 
@@ -515,6 +520,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
             status_text=delivery.status.value.replace("_", " ").title(),
             status_tone=status_tone,
             pallet_count=delivery.total_pallets,
+            carrier_name=delivery.carrier_name or "Not set",
             loading_progress_percent=delivery.loading_progress_percent,
             warehouse_situation=warehouse_text,
             warehouse_tone=warehouse_tone,
@@ -532,6 +538,7 @@ class ShipmentOverviewScreenWindow(QMainWindow):
                 row.delivery_slip_number,
                 row.customer_name,
                 row.destination_name,
+                row.carrier_name,
                 row.warehouse_situation,
                 row.document_readiness_text,
             ]

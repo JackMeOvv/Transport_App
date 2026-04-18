@@ -226,6 +226,7 @@ class WarehouseScreenWindow(QMainWindow):
             "Transport Status",
             "Customer",
             "Destination",
+            "Carrier",
             "Expected Shipping Date",
             "Required Docs",
             "Signed CMR",
@@ -467,6 +468,7 @@ class WarehouseScreenWindow(QMainWindow):
         self.transport_detail_labels["Transport Status"].setText(delivery.status.value.replace("_", " ").title())
         self.transport_detail_labels["Customer"].setText(delivery.customer_name)
         self.transport_detail_labels["Destination"].setText(delivery.destination_name)
+        self.transport_detail_labels["Carrier"].setText(delivery.carrier_name or "Not set by transport")
         self.transport_detail_labels["Expected Shipping Date"].setText(
             delivery.expected_loading_date or "Not set by transport"
         )

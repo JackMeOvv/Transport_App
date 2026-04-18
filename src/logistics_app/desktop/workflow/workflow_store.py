@@ -128,6 +128,7 @@ class DeliveryWorkflowRecord:
     documents: dict[DocumentType, DocumentWorkflowRecord]
     transport_notes: str
     correction_notes: list[str]
+    carrier_name: str | None = None
     document_history: dict[DocumentType, list[DocumentWorkflowRecord]] = field(default_factory=dict)
     claimed_by: str | None = None
     claimed_at: str | None = None
@@ -404,20 +405,25 @@ class DesktopWorkflowStore(QObject):
         )
         self.workflow_changed.emit()
 
-    def set_expected_loading_date(
+    def set_loading_info(
         self,
         delivery_slip_number: str,
         expected_loading_date: str,
+        carrier_name: str,
         changed_by: str,
     ) -> None:
-        """Store the transport-provided expected loading date."""
+        """Store the transport-provided expected loading date and carrier name."""
         delivery = self.get_delivery(delivery_slip_number)
         delivery.expected_loading_date = expected_loading_date.strip()
+        delivery.carrier_name = carrier_name.strip()
         self._log_event(
             event_name="delivery_slip_changed",
             delivery_slip_number=delivery_slip_number,
             performed_by=changed_by,
-            details=f"Expected loading date set to {delivery.expected_loading_date}.",
+            details=(
+                f"Loading info set: Date={delivery.expected_loading_date}, "
+                f"Carrier={delivery.carrier_name}."
+            ),
         )
         self.workflow_changed.emit()
 
@@ -806,6 +812,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.RELEASED_BY_TRANSPORT,
             expected_loading_date="2026-04-18",
+            carrier_name="QuickLogistics North",
             pallets=[
                 PalletWorkflowRecord("PAL-0142-001", PalletStatus.IN_WAREHOUSE, "A-01-03", 8, "Put away"),
                 PalletWorkflowRecord("PAL-0142-002", PalletStatus.IN_WAREHOUSE, "A-01-04", 10, "Put away"),
@@ -877,6 +884,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.COMPLETED,
             expected_loading_date="2026-04-12",
+            carrier_name="Euro Freight BV",
             pallets=[
                 PalletWorkflowRecord("PAL-0140-001", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
                 PalletWorkflowRecord("PAL-0140-002", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
@@ -913,6 +921,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.SHIPPED,
             expected_loading_date="2026-04-13",
+            carrier_name="Harbor Linkage",
             pallets=[
                 PalletWorkflowRecord("PAL-0141-001", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
                 PalletWorkflowRecord("PAL-0141-002", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
