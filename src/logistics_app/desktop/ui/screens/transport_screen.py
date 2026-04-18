@@ -719,6 +719,7 @@ class TransportScreenWindow(QMainWindow):
             card = DocumentCard(title, filename, metadata, status_text, status_tone)
             card.open_requested.connect(self._open_document)
             card.print_requested.connect(self._print_document)
+            card.upload_requested.connect(self._upload_document)
             self._document_cards_by_title[title] = card
             self.document_cards_layout.addWidget(card, index // 2, index % 2)
 
@@ -784,34 +785,42 @@ class TransportScreenWindow(QMainWindow):
         if row < len(getattr(self, "_released_rows", [])):
             self._open_delivery(self._released_rows[row].delivery_slip_number)
 
-    def _upload_document(self) -> None:
+    def _upload_document(self, title: str | None = None) -> None:
         delivery = self._workflow_store.current_delivery()
-        document_names = [
-            item.value.replace("_", " ").title()
-            for item in DocumentType
-            if item != DocumentType.SIGNED_CMR
-        ]
-        selected_name, accepted = QInputDialog.getItem(self, "Upload Document", "Document type", document_names, 0, False)
-        if not accepted:
-            return
-        file_path, _selected_filter = QFileDialog.getOpenFileName(
+        if title:
+            document_type = DocumentType[title.replace(" ", "_").upper()]
+            selected_name = title
+        else:
+            document_names = [
+                item.value.replace("_", " ").title()
+                for item in DocumentType
+                if item != DocumentType.SIGNED_CMR
+            ]
+            selected_name, accepted = QInputDialog.getItem(self, "Upload Document", "Document type", document_names, 0, False)
+            if not accepted:
+                return
+            document_type = DocumentType[selected_name.replace(" ", "_").upper()]
+
+        file_paths, _selected_filter = QFileDialog.getOpenFileNames(
             self,
-            "Select document to upload",
+            f"Select {selected_name} file(s) to upload",
             "",
             "Documents (*.pdf *.doc *.docx *.png *.jpg *.jpeg *.zpl *.txt);;All files (*.*)",
         )
-        if not file_path:
+        if not file_paths:
             return
-        document_type = DocumentType[selected_name.replace(" ", "_").upper()]
-        filename = Path(file_path).name
-        self._workflow_store.upload_document(
-            delivery.delivery_slip_number,
-            document_type,
-            filename,
-            "transport.office",
-            source_path=file_path,
-        )
-        self._show_information(f"{selected_name} uploaded for {delivery.delivery_slip_number}.")
+
+        for file_path in file_paths:
+            filename = Path(file_path).name
+            self._workflow_store.upload_document(
+                delivery.delivery_slip_number,
+                document_type,
+                filename,
+                "transport.office",
+                source_path=file_path,
+            )
+        count = len(file_paths)
+        self._show_information(f"{count} {selected_name} file(s) uploaded for {delivery.delivery_slip_number}.")
 
     def _save_transport_settings(self) -> None:
         self._workflow_store.set_transport_operator_name(self.operator_name_input.text())
@@ -867,7 +876,11 @@ class TransportScreenWindow(QMainWindow):
 
     def _confirm_document_readiness(self) -> None:
         delivery = self._workflow_store.current_delivery()
-        self._workflow_store.release_delivery(delivery.delivery_slip_number, "transport.office")
+        try:
+            self._workflow_store.release_delivery(delivery.delivery_slip_number, "transport.office")
+        except ValueError as error:
+            self._show_warning(str(error))
+            return
         self._show_information(f"{delivery.delivery_slip_number} released to warehouse.")
 
     def _set_expected_shipping_date(self) -> None:

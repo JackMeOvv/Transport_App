@@ -183,7 +183,10 @@ class DeliveryWorkflowRecord:
 
     @property
     def is_ready_for_release(self) -> bool:
-        return self.required_document_types.issubset(self.available_document_types)
+        required = self.required_document_types
+        if not required:
+            return False
+        return required.issubset(self.available_document_types)
 
     @property
     def signed_cmr_status_text(self) -> str:
@@ -205,6 +208,8 @@ class DeliveryWorkflowRecord:
             DeliverySlipStatus.COMPLETED,
         }:
             return "Ready"
+        if not self.required_document_types:
+            return "Requirements Missing"
         if self.is_ready_for_release:
             return "Pending Release"
         return "Pending Documents"
@@ -223,6 +228,7 @@ class DesktopWorkflowStore(QObject):
         self._current_delivery_slip_number = "DEL-2026-0142"
         self._audit_events: list[AuditEventRecord] = []
         self._transport_operator_name = ""
+        self._user_role = "admin"  # Default to admin for now, can be changed
         self._deliveries = self._build_initial_deliveries()
 
     def current_delivery(self) -> DeliveryWorkflowRecord:
@@ -345,8 +351,8 @@ class DesktopWorkflowStore(QObject):
             transport_notes="New delivery created by warehouse. Awaiting transport document preparation.",
             correction_notes=[],
         )
-        self._regenerate_sticker_document(delivery, uploaded_by="warehouse.system")
         self._deliveries[delivery_number] = delivery
+        self._regenerate_sticker_document(delivery, uploaded_by="warehouse.system")
         self._log_event(
             event_name="delivery_slip_created",
             delivery_slip_number=delivery_number,
@@ -431,6 +437,15 @@ class DesktopWorkflowStore(QObject):
 
     def set_transport_operator_name(self, operator_name: str) -> None:
         self._transport_operator_name = operator_name.strip()
+        self.workflow_changed.emit()
+
+    def user_role(self) -> str:
+        return self._user_role
+
+    def set_user_role(self, role: str) -> None:
+        if role not in {"warehouse", "transport", "admin"}:
+            raise ValueError(f"Invalid role: {role}")
+        self._user_role = role
         self.workflow_changed.emit()
 
     def claim_delivery(self, delivery_slip_number: str, claimed_by: str) -> None:
@@ -589,6 +604,13 @@ class DesktopWorkflowStore(QObject):
 
     def release_delivery(self, delivery_slip_number: str, released_by: str) -> None:
         delivery = self.get_delivery(delivery_slip_number)
+        if not delivery.required_document_types:
+            raise ValueError("At least one required document must be set before release.")
+        if not delivery.is_ready_for_release:
+            missing = delivery.required_document_types - delivery.available_document_types
+            missing_names = ", ".join(_humanize_document_type(t) for t in missing)
+            raise ValueError(f"Cannot release. Missing required documents: {missing_names}")
+
         delivery.status = DeliverySlipStatus.RELEASED_BY_TRANSPORT
         self._log_event(
             event_name="transport_document_readiness_confirmed",
@@ -599,6 +621,23 @@ class DesktopWorkflowStore(QObject):
                 "and operational decision."
             ),
         )
+        self.workflow_changed.emit()
+
+    def delete_delivery(self, delivery_slip_number: str, performed_by: str) -> None:
+        if delivery_slip_number not in self._deliveries:
+            raise ValueError(f"Unknown delivery slip: {delivery_slip_number}")
+
+        del self._deliveries[delivery_slip_number]
+        self._log_event(
+            event_name="delivery_slip_deleted",
+            delivery_slip_number=delivery_slip_number,
+            performed_by=performed_by,
+            details="Delivery note manually deleted by administrator.",
+        )
+        if self._current_delivery_slip_number == delivery_slip_number:
+            self._current_delivery_slip_number = next(iter(self._deliveries.keys())) if self._deliveries else ""
+            self.current_delivery_changed.emit(self._current_delivery_slip_number)
+
         self.workflow_changed.emit()
 
     def assign_pallet_location(
@@ -758,31 +797,31 @@ class DesktopWorkflowStore(QObject):
         return {
             DocumentType.PACKING_SLIP: PrintRequirementRecord(
                 document_type=DocumentType.PACKING_SLIP,
-                required_copies=2,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
             DocumentType.CMR: PrintRequirementRecord(
                 document_type=DocumentType.CMR,
-                required_copies=2,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
             DocumentType.CERTIFICATE: PrintRequirementRecord(
                 document_type=DocumentType.CERTIFICATE,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Office_01",
             ),
             DocumentType.STICKER: PrintRequirementRecord(
                 document_type=DocumentType.STICKER,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Label_01",
             ),
             DocumentType.TRANSPORT_DOCUMENT: PrintRequirementRecord(
                 document_type=DocumentType.TRANSPORT_DOCUMENT,
-                required_copies=1,
+                required_copies=0,
                 printed_copies=0,
                 default_printer="Warehouse_Main_01",
             ),
@@ -962,7 +1001,13 @@ class DesktopWorkflowStore(QObject):
     ) -> None:
         """Generate pallet sticker labels with Code 128 barcodes for each pallet."""
         requirement = delivery.print_requirements[DocumentType.STICKER]
-        requirement.required_copies = len(delivery.pallets)
+        # In correction flow, we might want stickers required,
+        # but in initial creation, we keep it 0 as per new requirements
+        # until transport or warehouse manually sets it.
+        # Actually, stickers are special.
+        # Let's keep the requirement=0 default even here if it's new.
+        if requirement.required_copies > 0:
+             requirement.required_copies = len(delivery.pallets)
         requirement.printed_copies = len(delivery.pallets)
 
         sticker_history = delivery.document_history.setdefault(DocumentType.STICKER, [])

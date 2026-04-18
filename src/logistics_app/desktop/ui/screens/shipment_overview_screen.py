@@ -223,6 +223,9 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         toolbar.add_button("Quick Delivery View").clicked.connect(self._open_selected_delivery)
         toolbar.add_button("Clear Filters").clicked.connect(self._clear_filters)
         toolbar.add_button("Refresh Queue").clicked.connect(self._refresh_table)
+        self.delete_button = toolbar.add_button("Delete Delivery", role="danger")
+        self.delete_button.clicked.connect(self._delete_selected_delivery)
+        self.delete_button.setVisible(self._workflow_store.user_role() == "admin")
         return toolbar
 
     def _build_summary_cards(self) -> QGridLayout:
@@ -371,6 +374,8 @@ class ShipmentOverviewScreenWindow(QMainWindow):
         return panel
 
     def _refresh_table(self) -> None:
+        if hasattr(self, "delete_button"):
+            self.delete_button.setVisible(self._workflow_store.user_role() == "admin")
         filtered_rows = self._filtered_rows()
         self._visible_rows = filtered_rows
         not_ready_rows = [row for row in filtered_rows if row.status_text != "Released By Transport"]
@@ -574,6 +579,29 @@ class ShipmentOverviewScreenWindow(QMainWindow):
     def _open_delivery_by_number(self, delivery_number: str) -> None:
         self._workflow_store.set_current_delivery(delivery_number)
         self.open_in_warehouse_requested.emit(delivery_number)
+
+    def _delete_selected_delivery(self) -> None:
+        delivery_number = ""
+        if self.released_table.currentRow() >= 0 and self.released_table.rowCount() > 0:
+            delivery_number = self.released_table.item(self.released_table.currentRow(), 0).text()
+        elif self.not_ready_table.currentRow() >= 0 and self.not_ready_table.rowCount() > 0:
+            delivery_number = self.not_ready_table.item(self.not_ready_table.currentRow(), 0).text()
+
+        if not delivery_number:
+            return
+
+        from PySide6.QtWidgets import QMessageBox
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete delivery {delivery_number}?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                self._workflow_store.delete_delivery(delivery_number, "admin.user")
+            except ValueError as error:
+                QMessageBox.warning(self, "Delete Error", str(error))
 
     def _build_progress_widget(self, percent: int) -> QWidget:
         container = QWidget()
