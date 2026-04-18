@@ -17,6 +17,7 @@ class BaseDialog(QDialog):
         super().__init__(parent)
         self.setObjectName("BaseDialog")
         self.setModal(True)
+        self.setWindowTitle(title)
         self.resize(520, 240)
 
         self.title_label = QLabel(title)

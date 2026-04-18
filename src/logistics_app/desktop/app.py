@@ -29,12 +29,28 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Logistics App")
         self.resize(1400, 900)
 
-        tabs = QTabWidget()
-        tabs.addTab(ShipmentOverviewScreenWindow(), "Shipment Overview")
-        tabs.addTab(WarehouseScreenWindow(), "Warehouse")
-        tabs.addTab(TransportScreenWindow(), "Transport")
+        self.tabs = QTabWidget()
+        self.shipment_overview_screen = ShipmentOverviewScreenWindow()
+        self.warehouse_screen = WarehouseScreenWindow()
+        self.transport_screen = TransportScreenWindow()
 
-        self.setCentralWidget(tabs)
+        self.tabs.addTab(self.shipment_overview_screen, "Shipment Overview")
+        self.tabs.addTab(self.warehouse_screen, "Warehouse")
+        self.tabs.addTab(self.transport_screen, "Transport")
+
+        self.shipment_overview_screen.open_in_warehouse_requested.connect(self._open_in_warehouse)
+        self.tabs.currentChanged.connect(self._handle_tab_change)
+
+        self.setCentralWidget(self.tabs)
+
+    def _open_in_warehouse(self, _delivery_slip_number: str) -> None:
+        """Switch the shell to the warehouse workspace for the selected delivery."""
+        self.tabs.setCurrentWidget(self.warehouse_screen)
+
+    def _handle_tab_change(self, index: int) -> None:
+        """Keep the transport workspace queue-first unless a shipment is explicitly opened."""
+        if self.tabs.widget(index) is self.transport_screen:
+            self.transport_screen.show_default_overview()
 
 
 def main() -> None:
