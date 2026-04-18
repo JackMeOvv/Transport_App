@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
     def _handle_role_change(self, role: str) -> None:
         """Filter tab visibility and functionality based on user role."""
         self._current_role = role
-        self.tabs.setTabVisible(0, role in {"Admin"})  # Overview
+        self.tabs.setTabVisible(0, role in {"Admin", "Warehouse"})  # Overview
         self.tabs.setTabVisible(1, role in {"Admin", "Warehouse"})  # Warehouse
         self.tabs.setTabVisible(2, role in {"Admin", "Transport"})  # Transport
 
