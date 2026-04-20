@@ -143,7 +143,6 @@ class TransportScreenWindow(QMainWindow):
 
         search_layout = QHBoxLayout()
         self.sent_search_input = QLineEdit()
-        self.sent_search_input.setPlaceholderText("Search shipped delivery note or customer...")
         self.sent_search_input.textChanged.connect(self._refresh_sent_shipments_table)
         search_layout.addWidget(self.sent_search_input)
         clear_button = QPushButton("Clear")
@@ -221,7 +220,6 @@ class TransportScreenWindow(QMainWindow):
 
         layout.addWidget(self._caption("Your Name"), 1, 0)
         self.operator_name_input = QLineEdit()
-        self.operator_name_input.setPlaceholderText("Enter colleague name")
         self.operator_name_input.setText(self._workflow_store.transport_operator_name())
         layout.addWidget(self.operator_name_input, 1, 1)
 
@@ -247,8 +245,8 @@ class TransportScreenWindow(QMainWindow):
 
         layout.addWidget(self._caption("Delivery Slip"), 1, 0)
         self.slip_input = QLineEdit()
-        self.slip_input.setPlaceholderText("Enter or scan delivery slip number")
-        self.slip_input.setText(self._workflow_store.current_delivery().delivery_slip_number)
+        delivery = self._workflow_store.current_delivery()
+        self.slip_input.setText(delivery.delivery_slip_number if delivery else "")
         layout.addWidget(self.slip_input, 1, 1, 1, 2)
 
         layout.addWidget(self._caption("Customer"), 1, 3)
@@ -284,9 +282,31 @@ class TransportScreenWindow(QMainWindow):
         toolbar.add_button("Upload Documents", role="primary").clicked.connect(self._upload_document)
         toolbar.add_button("Adjust Print Copies").clicked.connect(self._adjust_print_copies)
         toolbar.add_button("Confirm Readiness").clicked.connect(self._confirm_document_readiness)
+        self.admin_override_button = toolbar.add_button("Admin Release Override")
+        self.admin_override_button.clicked.connect(self._admin_manual_release)
         toolbar.add_button("Set Expected Shipping Date").clicked.connect(self._set_expected_shipping_date)
         toolbar.add_button("Open Sent History").clicked.connect(lambda: self._show_overview(tab_index=1))
         return toolbar
+
+    def set_current_role(self, role: str) -> None:
+        """Apply role-based permissions to transport actions."""
+        if hasattr(self, "admin_override_button"):
+            self.admin_override_button.setVisible(role == "Admin")
+
+    def _admin_manual_release(self) -> None:
+        delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Override",
+            f"Bypass all document rules and release {delivery.delivery_slip_number} now?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if confirm == QMessageBox.StandardButton.Yes:
+            self._workflow_store.admin_release_delivery(delivery.delivery_slip_number, "admin.user")
+            self._show_information("Shipment released via admin override.")
 
     def _build_summary_cards(self) -> QGridLayout:
         cards_layout = QGridLayout()
@@ -587,6 +607,14 @@ class TransportScreenWindow(QMainWindow):
 
     def _refresh_details_page(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self.page_header.set_subtitle("Select a shipment from the queue to manage documents and release.")
+            for label in self._delivery_detail_labels.values():
+                label.setText("-")
+            self.notes_box.clear()
+            self.slip_input.clear()
+            return
+
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
         detail_values = {
             "Delivery Slip": delivery.delivery_slip_number,
@@ -716,9 +744,12 @@ class TransportScreenWindow(QMainWindow):
                     metadata = f"{uploaded_count} files uploaded | Latest: {metadata}"
                 status_text = "Available"
                 status_tone = "success" if document_type != DocumentType.SIGNED_CMR else "info"
-            card = DocumentCard(title, filename, metadata, status_text, status_tone)
+            card = DocumentCard(
+                title, filename, metadata, status_text, status_tone, can_upload=True
+            )
             card.open_requested.connect(self._open_document)
             card.print_requested.connect(self._print_document)
+            card.upload_requested.connect(self._upload_document_for_type)
             self._document_cards_by_title[title] = card
             self.document_cards_layout.addWidget(card, index // 2, index % 2)
 
@@ -785,33 +816,50 @@ class TransportScreenWindow(QMainWindow):
             self._open_delivery(self._released_rows[row].delivery_slip_number)
 
     def _upload_document(self) -> None:
+        self._upload_document_for_type(None)
+
+    def _upload_document_for_type(self, title: str | None) -> None:
         delivery = self._workflow_store.current_delivery()
-        document_names = [
-            item.value.replace("_", " ").title()
-            for item in DocumentType
-            if item != DocumentType.SIGNED_CMR
-        ]
-        selected_name, accepted = QInputDialog.getItem(self, "Upload Document", "Document type", document_names, 0, False)
-        if not accepted:
+        if delivery is None:
+            self._show_warning("No delivery selected.")
             return
-        file_path, _selected_filter = QFileDialog.getOpenFileName(
+
+        if title:
+            document_type = DocumentType[title.replace(" ", "_").upper()]
+        else:
+            document_names = [
+                item.value.replace("_", " ").title()
+                for item in DocumentType
+                if item != DocumentType.SIGNED_CMR
+            ]
+            selected_name, accepted = QInputDialog.getItem(
+                self, "Upload Document", "Document type", document_names, 0, False
+            )
+            if not accepted:
+                return
+            document_type = DocumentType[selected_name.replace(" ", "_").upper()]
+
+        file_paths, _selected_filter = QFileDialog.getOpenFileNames(
             self,
-            "Select document to upload",
+            f"Select {document_type.value.replace('_', ' ').title()} file(s) to upload",
             "",
             "Documents (*.pdf *.doc *.docx *.png *.jpg *.jpeg *.zpl *.txt);;All files (*.*)",
         )
-        if not file_path:
+        if not file_paths:
             return
-        document_type = DocumentType[selected_name.replace(" ", "_").upper()]
-        filename = Path(file_path).name
-        self._workflow_store.upload_document(
-            delivery.delivery_slip_number,
-            document_type,
-            filename,
-            "transport.office",
-            source_path=file_path,
+
+        for file_path in file_paths:
+            filename = Path(file_path).name
+            self._workflow_store.upload_document(
+                delivery.delivery_slip_number,
+                document_type,
+                filename,
+                "transport.office",
+                source_path=file_path,
+            )
+        self._show_information(
+            f"{len(file_paths)} document(s) uploaded for {delivery.delivery_slip_number}."
         )
-        self._show_information(f"{selected_name} uploaded for {delivery.delivery_slip_number}.")
 
     def _save_transport_settings(self) -> None:
         self._workflow_store.set_transport_operator_name(self.operator_name_input.text())
@@ -867,6 +915,32 @@ class TransportScreenWindow(QMainWindow):
 
     def _confirm_document_readiness(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            self._show_warning("No delivery selected.")
+            return
+        if not delivery.expected_loading_date:
+            self._show_warning("Cannot release shipment: Expected loading date must be set first.")
+            return
+
+        if not delivery.print_requirements or not any(
+            req.required_copies > 0 for req in delivery.print_requirements.values()
+        ):
+            self._show_warning(
+                "Cannot release shipment: At least one required document type must be defined."
+            )
+            return
+
+        if not delivery.is_ready_for_release:
+            missing = [
+                dt.value.replace("_", " ").title()
+                for dt in delivery.required_document_types
+                if dt not in delivery.documents
+            ]
+            self._show_warning(
+                f"Cannot release shipment: Required documents are missing: {', '.join(missing)}."
+            )
+            return
+
         self._workflow_store.release_delivery(delivery.delivery_slip_number, "transport.office")
         self._show_information(f"{delivery.delivery_slip_number} released to warehouse.")
 
@@ -912,7 +986,8 @@ class TransportScreenWindow(QMainWindow):
 
     def _update_transport_notes(self) -> None:
         delivery = self._workflow_store.current_delivery()
-        delivery.transport_notes = self.notes_box.toPlainText().strip()
+        if delivery:
+            delivery.transport_notes = self.notes_box.toPlainText().strip()
 
     def _show_information(self, message: str) -> None:
         QMessageBox.information(self, "Transport", message)
