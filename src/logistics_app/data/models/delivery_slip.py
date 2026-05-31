@@ -28,6 +28,7 @@ class DeliverySlip(Base):
     customer_reference: Mapped[str | None] = mapped_column(String(100))
     customer_name: Mapped[str | None] = mapped_column(String(200))
     delivery_date: Mapped[date | None] = mapped_column(Date(), index=True)
+    carrier_name: Mapped[str | None] = mapped_column(String(200))
     origin_name: Mapped[str | None] = mapped_column(String(200))
     destination_name: Mapped[str | None] = mapped_column(String(200))
     transport_reference: Mapped[str | None] = mapped_column(String(100), index=True)

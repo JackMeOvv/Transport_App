@@ -109,6 +109,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(new_orders_label)
 
         self.active_shipments_table = DataTable()
+        self.active_shipments_table.setObjectName("TransportActiveTable")
         self.active_shipments_table.setColumnCount(8)
         self.active_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Destination", "Status", "Docs", "Readiness", "Claimed By", "Action"]
@@ -121,6 +122,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(released_orders_label)
 
         self.released_shipments_table = DataTable()
+        self.released_shipments_table.setObjectName("TransportReleasedTable")
         self.released_shipments_table.setColumnCount(8)
         self.released_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Destination", "Status", "Docs", "Readiness", "Claimed By", "Action"]
@@ -152,6 +154,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addLayout(search_layout)
 
         self.sent_shipments_table = DataTable()
+        self.sent_shipments_table.setObjectName("TransportSentTable")
         self.sent_shipments_table.setColumnCount(8)
         self.sent_shipments_table.setHorizontalHeaderLabels(
             ["Delivery Slip", "Customer", "Shipped", "Status", "Signed CMR", "Documents", "Claimed By", "Action"]
@@ -316,6 +319,7 @@ class TransportScreenWindow(QMainWindow):
             "Delivery Slip",
             "Transport Ref",
             "Customer",
+            "Carrier",
             "Delivery Date",
             "Origin",
             "Destination",
@@ -439,6 +443,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addLayout(top_row)
 
         self.print_requirements_table = DataTable()
+        self.print_requirements_table.setObjectName("TransportPrintRequirementsTable")
         self.print_requirements_table.setColumnCount(6)
         self.print_requirements_table.setHorizontalHeaderLabels(["Document Type", "Required", "Printed", "Remaining", "Default Printer", "Readiness"])
         self.print_requirements_table.itemDoubleClicked.connect(lambda _item: self._adjust_print_copies())
@@ -466,6 +471,7 @@ class TransportScreenWindow(QMainWindow):
         layout.addWidget(helper_text)
 
         self.pallets_table = DataTable()
+        self.pallets_table.setObjectName("TransportLinkedPalletsTable")
         self.pallets_table.setColumnCount(5)
         self.pallets_table.setHorizontalHeaderLabels(["Pallet ID", "Status", "Location", "Packages", "Last Movement"])
         layout.addWidget(self.pallets_table)
@@ -587,11 +593,15 @@ class TransportScreenWindow(QMainWindow):
 
     def _refresh_details_page(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if delivery is None:
+            return
+
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
         detail_values = {
             "Delivery Slip": delivery.delivery_slip_number,
             "Transport Ref": delivery.transport_reference,
             "Customer": delivery.customer_name,
+            "Carrier": delivery.carrier_name or "Not set",
             "Delivery Date": delivery.delivery_date,
             "Origin": delivery.origin_name,
             "Destination": delivery.destination_name,
@@ -867,25 +877,41 @@ class TransportScreenWindow(QMainWindow):
 
     def _confirm_document_readiness(self) -> None:
         delivery = self._workflow_store.current_delivery()
+        if not delivery.expected_loading_date or not delivery.carrier_name or delivery.carrier_name == "Not set":
+            self._show_warning("Carrier name and expected loading date must be set before release.")
+            return
+
         self._workflow_store.release_delivery(delivery.delivery_slip_number, "transport.office")
         self._show_information(f"{delivery.delivery_slip_number} released to warehouse.")
 
     def _set_expected_shipping_date(self) -> None:
         delivery = self._workflow_store.current_delivery()
+
+        carrier_name, accepted = QInputDialog.getText(
+            self,
+            "Set Loading Information",
+            "Carrier Name:",
+            text=delivery.carrier_name or "",
+        )
+        if not accepted or not carrier_name.strip():
+            return
+
         date_value, accepted = QInputDialog.getText(
             self,
-            "Expected Shipping Date",
-            "Expected shipping date (YYYY-MM-DD)",
+            "Set Loading Information",
+            "Expected shipping date (YYYY-MM-DD):",
             text=delivery.expected_loading_date or delivery.delivery_date,
         )
         if not accepted or not date_value.strip():
             return
-        self._workflow_store.set_expected_loading_date(
+
+        self._workflow_store.set_loading_info(
             delivery.delivery_slip_number,
             date_value.strip(),
+            carrier_name.strip(),
             "transport.office",
         )
-        self._show_information(f"Expected shipping date set to {date_value.strip()}.")
+        self._show_information(f"Loading info updated for {delivery.delivery_slip_number}.")
 
     def _open_document(self, title: str) -> None:
         delivery = self._workflow_store.current_delivery()

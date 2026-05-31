@@ -134,6 +134,7 @@ Main operational record. One row represents one delivery.
 | `customer_reference` | `varchar(100)` | Yes | External customer reference |
 | `customer_name` | `varchar(200)` | Yes | Useful denormalized operational value |
 | `delivery_date` | `date` | Yes | Planned or agreed delivery date |
+| `carrier_name` | `varchar(200)` | Yes | Name of the assigned carrier |
 | `origin_name` | `varchar(200)` | Yes | Operational origin label |
 | `destination_name` | `varchar(200)` | Yes | Operational destination label |
 | `transport_reference` | `varchar(100)` | Yes | Transport planning or TMS reference |

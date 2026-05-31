@@ -20,6 +20,7 @@ from logistics_app.desktop.ui.screens import (
     WarehouseScreenWindow,
 )
 from logistics_app.desktop.ui.theme import apply_enterprise_light_theme
+from logistics_app.desktop.workflow import get_workflow_store
 
 
 class MainWindow(QMainWindow):
@@ -28,6 +29,8 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Logistics App")
         self.resize(1400, 900)
+        self._workflow_store = get_workflow_store()
+        self._programmatic_switch = False
 
         self.tabs = QTabWidget()
         self.shipment_overview_screen = ShipmentOverviewScreenWindow()
@@ -45,12 +48,17 @@ class MainWindow(QMainWindow):
 
     def _open_in_warehouse(self, _delivery_slip_number: str) -> None:
         """Switch the shell to the warehouse workspace for the selected delivery."""
+        self._programmatic_switch = True
         self.tabs.setCurrentWidget(self.warehouse_screen)
+        self._programmatic_switch = False
 
     def _handle_tab_change(self, index: int) -> None:
         """Keep the transport workspace queue-first unless a shipment is explicitly opened."""
         if self.tabs.widget(index) is self.transport_screen:
             self.transport_screen.show_default_overview()
+
+        if self.tabs.widget(index) is self.warehouse_screen and not self._programmatic_switch:
+            self._workflow_store.set_current_delivery(None)
 
 
 def main() -> None:

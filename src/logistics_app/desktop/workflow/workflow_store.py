@@ -128,6 +128,7 @@ class DeliveryWorkflowRecord:
     documents: dict[DocumentType, DocumentWorkflowRecord]
     transport_notes: str
     correction_notes: list[str]
+    carrier_name: str | None = None
     document_history: dict[DocumentType, list[DocumentWorkflowRecord]] = field(default_factory=dict)
     claimed_by: str | None = None
     claimed_at: str | None = None
@@ -214,18 +215,20 @@ class DesktopWorkflowStore(QObject):
     """Small shared desktop workflow store for the current process."""
 
     workflow_changed = Signal()
-    current_delivery_changed = Signal(str)
+    current_delivery_changed = Signal(object)
     navigation_requested = Signal(str, str)
 
     def __init__(self) -> None:
         super().__init__()
         self._sequence = count(147)
-        self._current_delivery_slip_number = "DEL-2026-0142"
+        self._current_delivery_slip_number: str | None = "DEL-2026-0142"
         self._audit_events: list[AuditEventRecord] = []
         self._transport_operator_name = ""
         self._deliveries = self._build_initial_deliveries()
 
-    def current_delivery(self) -> DeliveryWorkflowRecord:
+    def current_delivery(self) -> DeliveryWorkflowRecord | None:
+        if self._current_delivery_slip_number is None:
+            return None
         return self.get_delivery(self._current_delivery_slip_number)
 
     def get_delivery(self, delivery_slip_number: str) -> DeliveryWorkflowRecord:
@@ -283,8 +286,8 @@ class DesktopWorkflowStore(QObject):
             if delivery.status in sent_statuses
         ]
 
-    def set_current_delivery(self, delivery_slip_number: str) -> None:
-        if delivery_slip_number not in self._deliveries:
+    def set_current_delivery(self, delivery_slip_number: str | None) -> None:
+        if delivery_slip_number is not None and delivery_slip_number not in self._deliveries:
             raise ValueError(f"Unknown delivery slip: {delivery_slip_number}")
         self._current_delivery_slip_number = delivery_slip_number
         self.current_delivery_changed.emit(delivery_slip_number)
@@ -293,7 +296,10 @@ class DesktopWorkflowStore(QObject):
     def find_delivery_by_reference(self, reference_text: str) -> DeliveryWorkflowRecord:
         reference = reference_text.strip().upper()
         if not reference:
-            return self.current_delivery()
+            current = self.current_delivery()
+            if current is None:
+                raise ValueError("No delivery is currently selected. Please enter a reference.")
+            return current
         if reference in self._deliveries:
             return self._deliveries[reference]
 
@@ -404,20 +410,25 @@ class DesktopWorkflowStore(QObject):
         )
         self.workflow_changed.emit()
 
-    def set_expected_loading_date(
+    def set_loading_info(
         self,
         delivery_slip_number: str,
         expected_loading_date: str,
+        carrier_name: str,
         changed_by: str,
     ) -> None:
-        """Store the transport-provided expected loading date."""
+        """Store the transport-provided expected loading date and carrier name."""
         delivery = self.get_delivery(delivery_slip_number)
         delivery.expected_loading_date = expected_loading_date.strip()
+        delivery.carrier_name = carrier_name.strip()
         self._log_event(
             event_name="delivery_slip_changed",
             delivery_slip_number=delivery_slip_number,
             performed_by=changed_by,
-            details=f"Expected loading date set to {delivery.expected_loading_date}.",
+            details=(
+                f"Loading info set: Date={delivery.expected_loading_date}, "
+                f"Carrier={delivery.carrier_name}."
+            ),
         )
         self.workflow_changed.emit()
 
@@ -806,6 +817,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.RELEASED_BY_TRANSPORT,
             expected_loading_date="2026-04-18",
+            carrier_name="QuickLogistics North",
             pallets=[
                 PalletWorkflowRecord("PAL-0142-001", PalletStatus.IN_WAREHOUSE, "A-01-03", 8, "Put away"),
                 PalletWorkflowRecord("PAL-0142-002", PalletStatus.IN_WAREHOUSE, "A-01-04", 10, "Put away"),
@@ -877,6 +889,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.COMPLETED,
             expected_loading_date="2026-04-12",
+            carrier_name="Euro Freight BV",
             pallets=[
                 PalletWorkflowRecord("PAL-0140-001", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
                 PalletWorkflowRecord("PAL-0140-002", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
@@ -913,6 +926,7 @@ class DesktopWorkflowStore(QObject):
             origin_name="Moerdijk Warehouse",
             status=DeliverySlipStatus.SHIPPED,
             expected_loading_date="2026-04-13",
+            carrier_name="Harbor Linkage",
             pallets=[
                 PalletWorkflowRecord("PAL-0141-001", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
                 PalletWorkflowRecord("PAL-0141-002", PalletStatus.LOADED, "Loaded to truck", 6, "Loaded", True),
@@ -961,10 +975,6 @@ class DesktopWorkflowStore(QObject):
         uploaded_by: str,
     ) -> None:
         """Generate pallet sticker labels with Code 128 barcodes for each pallet."""
-        requirement = delivery.print_requirements[DocumentType.STICKER]
-        requirement.required_copies = len(delivery.pallets)
-        requirement.printed_copies = len(delivery.pallets)
-
         sticker_history = delivery.document_history.setdefault(DocumentType.STICKER, [])
         version = len(sticker_history) + 1
         filename = f"PalletStickers_{delivery.delivery_slip_number}.zpl"

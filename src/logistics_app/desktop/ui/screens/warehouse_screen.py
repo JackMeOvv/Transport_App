@@ -226,6 +226,7 @@ class WarehouseScreenWindow(QMainWindow):
             "Transport Status",
             "Customer",
             "Destination",
+            "Carrier",
             "Expected Shipping Date",
             "Required Docs",
             "Signed CMR",
@@ -292,6 +293,7 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addLayout(top_row)
 
         self.pallets_table = DataTable()
+        self.pallets_table.setObjectName("WarehousePalletsTable")
         self.pallets_table.setColumnCount(6)
         self.pallets_table.setHorizontalHeaderLabels(["Pallet ID", "Status", "Current Location", "Pallet No.", "Ready To Load", "Last Movement"])
         self.pallets_table.itemSelectionChanged.connect(self._populate_pallet_action_fields_from_selection)
@@ -395,6 +397,7 @@ class WarehouseScreenWindow(QMainWindow):
         layout.addWidget(helper_label)
 
         self.print_execution_table = DataTable()
+        self.print_execution_table.setObjectName("WarehousePrintExecutionTable")
         self.print_execution_table.setColumnCount(6)
         self.print_execution_table.setHorizontalHeaderLabels(["Document Type", "Required", "Printed", "Remaining", "Printer", "Action State"])
         layout.addWidget(self.print_execution_table)
@@ -414,7 +417,17 @@ class WarehouseScreenWindow(QMainWindow):
         return panel
     def _refresh_all(self) -> None:
         delivery = self._workflow_store.current_delivery()
-        documents_ready_for_warehouse = delivery.is_ready_for_release
+        if delivery is None:
+            self._show_empty_state()
+            return
+
+        documents_ready_for_warehouse = delivery.status in {
+            DeliverySlipStatus.RELEASED_BY_TRANSPORT,
+            DeliverySlipStatus.READY_TO_LOAD,
+            DeliverySlipStatus.LOADING_IN_PROGRESS,
+            DeliverySlipStatus.SHIPPED,
+            DeliverySlipStatus.COMPLETED,
+        }
         delivery_changed = delivery.delivery_slip_number != self._displayed_delivery_slip_number
         self._displayed_delivery_slip_number = delivery.delivery_slip_number
         self.page_header.set_subtitle(f"{delivery.delivery_slip_number} | {delivery.customer_name} | {delivery.status.value.replace('_', ' ').title()}")
@@ -434,6 +447,28 @@ class WarehouseScreenWindow(QMainWindow):
         if documents_ready_for_warehouse:
             self._refresh_document_cards(delivery)
             self._refresh_print_execution_table(delivery)
+
+    def _show_empty_state(self) -> None:
+        """Clear the screen when no delivery is selected."""
+        self._displayed_delivery_slip_number = None
+        self.page_header.set_subtitle("No shipment selected. Scan a pallet or enter a delivery slip number.")
+        self.scan_input.clear()
+        self.selected_pallet_input.clear()
+        self.location_input.clear()
+        self.upload_notes.clear()
+
+        self.summary_card_one.update_content("Current Delivery", "-", "No delivery selected", "-", "neutral")
+        self.summary_card_two.update_content("Pallets Loaded", "-", "No delivery selected", "-", "neutral")
+        self.summary_card_three.update_content("Print Copies Remaining", "-", "No delivery selected", "-", "neutral")
+
+        self.transport_readiness_badge.setText("None")
+        self.transport_readiness_badge.set_tone("neutral")
+        for label in self.transport_detail_labels.values():
+            label.setText("-")
+
+        self.pallets_table.setRowCount(0)
+        self.documents_panel.setVisible(False)
+        self.print_execution_panel.setVisible(False)
 
     def _refresh_summary_cards(self, delivery) -> None:
         self.summary_card_one.update_content(
@@ -467,6 +502,7 @@ class WarehouseScreenWindow(QMainWindow):
         self.transport_detail_labels["Transport Status"].setText(delivery.status.value.replace("_", " ").title())
         self.transport_detail_labels["Customer"].setText(delivery.customer_name)
         self.transport_detail_labels["Destination"].setText(delivery.destination_name)
+        self.transport_detail_labels["Carrier"].setText(delivery.carrier_name or "Not set by transport")
         self.transport_detail_labels["Expected Shipping Date"].setText(
             delivery.expected_loading_date or "Not set by transport"
         )
